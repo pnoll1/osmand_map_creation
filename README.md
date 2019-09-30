@@ -7,9 +7,9 @@ Osm data + open address data compiled for use in OSMAND
     - King
     - Pierce
     - Snohomish
+    - Spokane
     - Thurston
-  - Viewable but not searchable, debugging needed
-      - Spokane Co
+
 # Usage
 Option 1:  
 Download file from releases to data folder for OSMAND and it will auto load.  
