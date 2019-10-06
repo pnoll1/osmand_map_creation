@@ -5,10 +5,12 @@ Osm data + open address data compiled for use in OSMAND
   - Counties
     - Clark
     - King
+    - Kitsap
     - Pierce
     - Snohomish
     - Spokane
     - Thurston
+    - Whatcom
 
 # Usage
 Option 1:  
@@ -17,7 +19,10 @@ Option 2:
 Download file from releases to phone and open it. OSMAND will copy file into its data folder and load it.
 This will leave a copy of the file in the Downloads folder.
 
-Deactivate the default WA map file to ensure search pulls results from this file.
+Deactivate the default WA map file to ensure search pulls results from this file.  
+Restart app after changes otherwise search may not work properly. Restarting is done 
+by opening recent apps and flicking upward on app in Android 9.
+
 # Sources
 Osm format sources prior to merge are supplied. The merged file is not supplied since its larger Github's max file size. 
 Osmium merge is used to merge supplied sources with latest washington extract before being compiled to OSMAND format.
