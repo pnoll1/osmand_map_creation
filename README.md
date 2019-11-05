@@ -11,6 +11,11 @@ Osm data + open address data compiled for use in OSMAND
     - Spokane
     - Thurston
     - Whatcom
+- ID
+  - Counties
+    - Ada
+    - Canyon
+    - Kootenai
 
 # Usage
 Option 1:  
