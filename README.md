@@ -30,6 +30,6 @@ by opening recent apps and flicking upward on app in Android 9.
 
 # Sources
 Osm format sources prior to merge are supplied. The merged file is not supplied since its larger Github's max file size. 
-Osmium merge is used to merge supplied sources with latest washington extract before being compiled to OSMAND format.
+Osmium merge is used to merge supplied sources with latest state extract before being compiled to OSMAND format.
 # License
 ODBL 1.0
