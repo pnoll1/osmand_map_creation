@@ -17,6 +17,16 @@ Osm data + open address data compiled for use in OSMAND
     - Canyon
     - Kootenai
 
+- OR
+  - Counties
+    - Deschutes
+    - Jackson
+    - Lane
+    - Marion
+  - Counties OSM already has
+    - Clackamas
+    - Multonomah
+    - Washington
 # Usage
 Option 1:  
 Download file from releases to data folder for OSMAND and it will auto load.  
