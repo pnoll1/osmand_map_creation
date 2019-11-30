@@ -4,6 +4,8 @@ Osm data + open address data compiled for use in OSMAND and Maps.me
 - WA state
   - Counties
     - Clark
+    - Cowlitz
+    - Franklin
     - King
     - Kitsap
     - Pierce
