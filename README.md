@@ -9,10 +9,13 @@ Osm data + open address data compiled for use in OSMAND and Maps.me
     - King
     - Kitsap
     - Pierce
+    - Skagit
     - Snohomish
     - Spokane
     - Thurston
     - Whatcom
+  - Cities
+    - Kennewick
 - ID
   - Counties
     - Ada
