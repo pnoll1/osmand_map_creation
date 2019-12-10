@@ -6,6 +6,7 @@ Osm data + open address data compiled for use in OSMAND and Maps.me
     - Clark
     - Cowlitz
     - Franklin
+    - Grant
     - King
     - Kitsap
     - Pierce
@@ -16,6 +17,7 @@ Osm data + open address data compiled for use in OSMAND and Maps.me
     - Whatcom
   - Cities
     - Kennewick
+![wa coverage](docs/wa_coverage.png)
 - ID
   - Counties
     - Ada
@@ -32,6 +34,7 @@ Osm data + open address data compiled for use in OSMAND and Maps.me
     - Clackamas
     - Multonomah
     - Washington
+
 # Usage
 ## OSMAnd
 Option 1:  
@@ -47,8 +50,16 @@ by opening recent apps and flicking upward on app in Android 9.
 ## Maps.me
 Copy files to MapsWithMe folder on phone. Move, rename or delete map files that will conflict. They are in a dated folder i.e. 191019. Restart app for changes to take effect.
 
-# Sources
-Osm format sources prior to merge are supplied. The merged file is not supplied since its larger Github's max file size. 
-Osmium merge is used to merge supplied sources with latest state extract before being compiled to OSMAND/Maps.me format. Osmium sort is required before building with Maps.me. Run osmium sort then osmconvert --fake-version if you want to open files with josm.
+# Data
+## Sources
+Data comes from offical sources. Urls are available from OpenAddresses in their source files or in github issues.
+Osm format sources prior to merge are supplied. The merged file is not supplied since its larger Github's max file size. Run osmium sort then osmconvert --fake-version if you want to open files with josm. 
+## Processing
+### General
+Data is preprocessed to remove bad data, then addresses are expanded and normalized to match existing OSM data.
+### OSMAnd
+Run osmium merge with sources and latest state extract then run OSMAnd Map Creator.
+### Maps.Me
+Run osmium merge with sources and latest state extract then run osmium sort then run Map_Generator using --without-coasts from release branch you want to target.
 # License
 ODBL 1.0
