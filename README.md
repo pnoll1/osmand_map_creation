@@ -1,6 +1,8 @@
 # osmand_map_creation
 Osm data + open address data compiled for use in OSMAND and Maps.me
 # Targets
+US, addresses added based on [OpenAddresses](https://openaddresses.io/)
+## Areas with expanded addresses
 - WA state
   - Counties
     - Clark
