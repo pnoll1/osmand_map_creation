@@ -53,15 +53,19 @@ by opening recent apps and flicking upward on app in Android 9.
 Copy files to MapsWithMe folder on phone. Move, rename or delete map files that will conflict. They are in a dated folder i.e. 191019. Restart app for changes to take effect.
 
 # Data
-## Sources
-Data comes from offical sources. Urls are available from OpenAddresses in their source files or in github issues.
+## OpenAddresses
+OpenAddresses provides data downloads at (http://results.openaddresses.io/). 
+## Expanded Address Sources
+Data comes directly from offical sources. Urls are available from OpenAddresses in their source files or in github issues. Ogr2osm translation files for each county are provided (addr_county.py). wa/addr_grant.py is the best translation file for sources that provide street as a single field. wa/addr_franklin.py is the best translation file for sources that provides street with type and directions as seperate field.
 Osm format sources prior to merge are supplied. The merged file is not supplied since its larger Github's max file size. Run osmium sort then osmconvert --fake-version if you want to open files with josm. 
 ## Processing
-### General
+### OpenAddresses
+Data is converted to osm xml format and records without address data ignored.
+### Expanded Address General
 Data is preprocessed to remove bad data, then addresses are expanded and normalized to match existing OSM data.
 ### OSMAnd
 Run osmium merge with sources and latest state extract then run OSMAnd Map Creator.
 ### Maps.Me
 Run osmium merge with sources and latest state extract then run osmium sort then run Map_Generator using --without-coasts from release branch you want to target.
 # License
-ODBL 1.0
+[ODBL 1.0](https://opendatacommons.org/files/2018/02/odbl-10.txt)
