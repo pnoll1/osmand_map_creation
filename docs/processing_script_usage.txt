@@ -1,0 +1,14 @@
+# Linux Install
+Install ogr2ogr, osmium, postgresql, postgis, ogr2osm from github(install in /opt)
+Setup postgresql database and enable postgis
+Change details in pg2osm and load_csv to reflect database details
+Change oa_root and root to correct paths
+
+# Data Processing
+Add to sql statements to --sql flag in ogr2osm calls or add code after load finished for complex processing
+
+# Limitations
+Setup for US states only
+Running many states with update-osm will probably result in geofabrick rate limiting
+ogr2osm xml writer will choke on unicode stops
+
