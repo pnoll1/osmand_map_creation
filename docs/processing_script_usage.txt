@@ -1,4 +1,5 @@
 # Linux Install
+Put processing.py in directory where OpenAddresses download will be unzipped
 Install ogr2ogr, osmium, postgresql, postgis, ogr2osm from github(install in /opt)
 Setup postgresql database and enable postgis
 Change details in pg2osm and load_csv to reflect database details
