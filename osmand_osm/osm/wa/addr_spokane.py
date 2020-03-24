@@ -55,6 +55,17 @@ def filterTags(attrs):
     if not attrs:
         return
     # raw variables
+    address_number = 'addrnum'
+    prefix_type_raw = 'prefixtype'
+    pre_dir_raw = 'prefixdirection'
+    street_name_raw = 'streetname'
+    street_type_raw = 'streettype'
+    post_dir_raw = ''
+    city = 'city'
+    postcode_raw = ''
+    unit_raw = 'unitid'
+    '''
+    shp
     address_number = 'ADDRNUM'
     pre_dir_raw = 'PrefixDire'
     street_name_raw = 'StreetName'
@@ -62,7 +73,8 @@ def filterTags(attrs):
     post_dir_raw = ''
     city = 'CITY'
     postcode_raw = ''
-    unit_raw = '' # 'UNITID'
+    unit_raw = 'UNITID'
+    '''
     # processed variables
     addr = ''
     pre_dir = ''
@@ -71,8 +83,10 @@ def filterTags(attrs):
     tags = {}
     if address_number in attrs and attrs[address_number] != '':
         tags['addr:housenumber'] = attrs[address_number]
-    #if 'Unit' in attrs and attrs['Unit'] != '':
-    #   tags['addr:unit'] = attrs['Unit']
+    if unit_raw in attrs and attrs[unit_raw] != '':
+       tags['addr:unit'] = attrs[unit_raw]
+    if prefix_type_raw in attrs and attrs[prefix_type_raw] != '':
+        prefix_type = prefix_type_raw
     if pre_dir_raw in attrs and attrs[pre_dir_raw] != '':
         pre_dir = translateName(attrs[pre_dir_raw])
     if street_name_raw in attrs and attrs[street_name_raw] != '':
