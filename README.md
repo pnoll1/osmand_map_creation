@@ -60,9 +60,9 @@ Data comes directly from offical sources. Urls are available from OpenAddresses 
 Osm format sources prior to merge are supplied. The merged file is not supplied since its larger Github's max file size. Run osmium sort then osmconvert --fake-version if you want to open files with josm. 
 ## Processing
 ### OpenAddresses
-Data is converted to osm xml format and records without address data ignored.
+Data is converted to osm xml format and records without address data ignored. See docs/processing_script_usage and processing.py file.
 ### Expanded Address General
-Data is preprocessed to remove bad data, then addresses are expanded and normalized to match existing OSM data.
+Data is preprocessed to remove bad data, then addresses are expanded and normalized to match existing OSM data. See docs/state_processing_script_usage and processing files in each state folder.
 ### OSMAnd
 Run osmium merge with sources and latest state extract then run OSMAnd Map Creator.
 ### Maps.Me
