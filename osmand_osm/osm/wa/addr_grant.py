@@ -155,24 +155,6 @@ def expand_street(addr):
         street = street.lstrip()
     return street
 
-# test cases
-test_addresses = ['E ST', 'E E ST', 'E ST E', '11TH ST', 'E 11TH ST', '11TH ST E', 'E MARYLAND ST', 'E 2ND ST', 'ST PAUL ST', 'LIMERICK WAY', 'N COLUMBIA CENTER BLVD', 'HWY 28 E', 'RD 28 NE']
-answer_addresses = ['E Street', 'East E Street', 'E Street East', '11th Street', 'East Maryland Street', 'East Maryland Street', 'East 2nd Street', 'Saint Paul Street', 'Limerick Way', 'North Columbia Center Boulevard', 'Highway 28 East']
-'''
-test_address = 'E ST'
-test_address2 = '11TH ST'
-test_address2_predir = 'E 11TH ST'
-test_address2_postdir = '11TH ST E'
-test_address3 = 'E MARYLAND ST'
-test_address4 = 'E 2ND ST'
-test_address5 = 'ST PAUL ST'
-test_address6 = 'LIMERICK WAY'
-test_address7 = 'E ST E'
-test_address8 = 'E E ST'
-test_address9 = 'N COLUMBIA CENTER BLVD'
-HWY 28 E
-'''
-
 def filterTags(attrs):
     if not attrs:
         return
@@ -194,30 +176,10 @@ def filterTags(attrs):
     tags = {}
     if address_number in attrs and attrs[address_number] != '':
         tags['addr:housenumber'] = attrs[address_number]
+
     #if 'Unit' in attrs and attrs['Unit'] != '':
     #   tags['addr:unit'] = attrs['Unit']
-    if pre_dir_raw in attrs and attrs[pre_dir_raw] != '':
-        pre_dir = translateName(attrs[pre_dir_raw])
-    '''if street_name_raw:
-        if re.search(r'^\d', attrs[street_name_raw]) is not None:
-            street = attrs[street_name_raw].lower()
-        else:
-            street = attrs[street_name_raw].title()
-    '''
-    if post_dir_raw in attrs and attrs[post_dir_raw] != '':
-        post_dir = translateName(attrs[post_dir_raw])
-    '''if street_type_raw in attrs and attrs[street_type_raw] != '':
-        street_type = translateName(attrs[street_type_raw])
-    
-    if pre_dir:
-        addr = pre_dir + ' ' + street
-    else:
-        addr = street
-    if street_type:
-        addr = addr + ' ' + street_type
-    if post_dir:
-        addr = addr + ' ' + post_dir
-    '''
+
     tags['addr:street'] = expand_street(attrs[street_name_raw])
     if city in attrs and attrs[city] != '':
         tags['addr:city'] = attrs[city].title()
