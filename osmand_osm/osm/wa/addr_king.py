@@ -45,15 +45,15 @@ def filterTags(attrs):
         return
 
     tags = {}
-    if 'ADDR_NUM' in attrs and attrs['ADDR_NUM'] != '':
-        tags['addr:housenumber'] = attrs['ADDR_NUM']
-    if 'UNIT' in attrs and attrs['UNIT'] != '':
-        tags['addr:unit'] = attrs['UNIT']
-    if 'FULLNAME' in attrs and attrs['FULLNAME'] != '':
-        tags['addr:street'] = translateName(attrs['FULLNAME'])
-    if 'CTYNAME' in attrs and attrs['CTYNAME'] != '':
-        tags['addr:city'] = str.capitalize(attrs['CTYNAME'])
-    if 'ZIP5' in attrs and attrs['ZIP5'] != '':
-        tags['addr:postcode'] = attrs['ZIP5']
+    if 'addr_num' in attrs and attrs['addr_num'] != '':
+        tags['addr:housenumber'] = attrs['addr_num']
+    if 'unit' in attrs and attrs['unit'] != '':
+        tags['addr:unit'] = attrs['unit']
+    if 'fullname' in attrs and attrs['fullname'] != '':
+        tags['addr:street'] = translateName(attrs['fullname'])
+    if 'ctyname' in attrs and attrs['ctyname'] != '':
+        tags['addr:city'] = str.capitalize(attrs['ctyname'])
+    if 'zip5' in attrs and attrs['zip5'] != '':
+        tags['addr:postcode'] = attrs['zip5']
 
     return tags
