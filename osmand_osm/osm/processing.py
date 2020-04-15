@@ -16,12 +16,22 @@ from multiprocessing import Pool
 # commandline argument setup
 parser = argparse.ArgumentParser(description='Process address data to a single osm file per state')
 parser.add_argument('state-list', nargs='+', help='lowercase 2 letter state abbreviation')
+parser.add_argument('--update-oa', action='store_true')
 parser.add_argument('--update-osm', action='store_true')
 parser.add_argument('--load-oa', action='store_true')
 parser.add_argument('--output-osm', action='store_true')
 args = parser.parse_args()
 state_list = vars(args)['state-list']
 # state_list = ['mt']
+
+
+def update_oa(url):
+    '''
+    downloads US files from OpenAddresses and unzips them, overwriting previous files
+    '''
+    filename = Path(url).name
+    run(['curl', '-o', filename, url])
+    run(['unzip', '-o', filename])
 
 
 def load_csv(path, state):
@@ -49,7 +59,7 @@ def pg2osm(path, id_start, state):
         except Exception:
             print('{0}_{1} is hashes only'.format(name, state))
             return id_start
-    elif 'integer' in run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout:
+    elif 'integer' or 'numeric' in run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout:
         os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=0"'.format(id_start, name, number_field, state))
         stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
         id_end = json.loads(stats.stdout)['data']['minid']['nodes']
@@ -160,4 +170,7 @@ def run_all(state):
 
 if __name__ == '__main__':
     with Pool(2) as p:
+        if args.update_oa == True:
+            oa_urls = ['https://data.openaddresses.io/openaddr-collected-us_midwest.zip', 'https://data.openaddresses.io/openaddr-collected-us_south.zip', 'https://data.openaddresses.io/openaddr-collected-us_west.zip', 'https://data.openaddresses.io/openaddr-collected-us_northeast.zip']
+            p.map(update_oa, oa_urls)
         p.map(run_all, state_list)
