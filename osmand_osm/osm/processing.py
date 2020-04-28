@@ -40,7 +40,7 @@ def load_csv(path, state):
     loads files into postgres and generates geometry column
     '''
     name = path.stem
-    os.system('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite'.format(path, name, state))
+    os.system('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite -lco OVERWRITE=YES'.format(path, name, state))
 
 
 def pg2osm(path, id_start, state):
@@ -50,7 +50,8 @@ def pg2osm(path, id_start, state):
     '''
     name = path.stem
     number_field = 'number'
-    if 'character' in run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout:
+    r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout
+    if 'character' in r:
         os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=\'\' and {2}!=\'0\'"'.format(id_start, name, number_field, state))
         stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
         # handle files with hashes only
@@ -59,31 +60,37 @@ def pg2osm(path, id_start, state):
         except Exception:
             print('{0}_{1} is hashes only'.format(name, state))
             return id_start
-    elif 'integer' or 'numeric' in run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout:
+    elif 'integer' in r or 'numeric' in r:
         os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=0"'.format(id_start, name, number_field, state))
         stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
         id_end = json.loads(stats.stdout)['data']['minid']['nodes']
     # handle empty file
     else:
-        os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=\'\' and {2}!=\'0\'"'.format(id_start, name, number_field, state))
-        stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
-        try:
-            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
-        except Exception:
-            print('{0}_{1} is empty'.format(name, state))
-            raise
-            return id_start
+        print('{0}_{1} is empty'.format(name, state))
+        raise
+        return id_start
     return id_end
 
 
 def create_master_list(state, master_list, oa_root):
+    '''
+    input: state as 2 letter abbrev., dict for sources to go into, root directory for oa
+    output: dict with 2 letter state abbrev. as key and list of sources as value
+    goes through each state folder and creates list of vrt files
+    '''
     oa_state_folder = oa_root.joinpath(Path(state))
-    file_list = []
+    file_list = [] 
     for filename in oa_state_folder.iterdir():
-        if filename.suffix == '.vrt':
+        # - is not allowed in postgres
+        if '-' in filename.name and filename.suffix == '.vrt':
+            filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
+            os.rename(filename, filename_new)
+            file_list.append(filename_new)
+        elif filename.suffix == '.vrt':
             file_list.append(filename)
+        
     master_list[state] = file_list
-    print('Master List Created')
+    print(state + ' ' + 'Master List Created')
     return master_list
 
 
@@ -91,7 +98,7 @@ def load_oa(state, master_list):
     file_list = master_list[state]
     for j in file_list:
         load_csv(j, state)
-    print('Load Finished')
+    print(state + ' ' + 'Load Finished')
     return
 
 
@@ -114,7 +121,7 @@ def output_osm(state, master_list, id, root):
             removal_list.append(j)
     # remove file from file list so merge will work
     for i in removal_list:
-        file_list.remove(j)
+        file_list.remove(i)
     master_list[state] = file_list 
     return master_list
 
@@ -128,7 +135,11 @@ def update_osm(state, state_expander):
     return
 
 
-def merge(state, master_list, state_expander):
+def merge(state, master_list, state_expander, pbf_output):
+    '''
+    input: state as 2 letter abbrev., dict of sources to be merged, dict to expand state abbrev. to full name, output folder
+    output: merged state pbf in output folder
+    '''
     list_files_string = []
     file_list = master_list.get(state)
     for i in file_list:
@@ -136,8 +147,13 @@ def merge(state, master_list, state_expander):
     file_list_string = ' '.join(list_files_string).replace('us/', '').replace('.vrt', '_addresses.osm')
     state_expanded = state_expander.get(state)
     state_expanded = state_expanded.replace(' ', '-')
-    run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o Us_{2}_northamerica_alpha.osm.pbf'.format(file_list_string, state, state_expanded), shell=True, capture_output=True, check=True, encoding='utf8')
-    print('Merge Finished')
+    try:
+        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {3}/Us_{2}_northamerica_alpha.osm.pbf'.format(file_list_string, state, state_expanded, pbf_output), shell=True, capture_output=True, check=True, encoding='utf8')
+    except Exception as e:
+        print(e.stderr)
+        print(state + ' ' + 'Merge Failed')
+        return
+    print(state + ' ' + 'Merge Finished')
     return
 
 # region slicing
@@ -155,8 +171,11 @@ def merge(state, master_list, state_expander):
 def run_all(state):
     state_expander = {'al':'alabama', 'ak':'alaska','ar':'arkansas','az':'arizona','ca':'california','co':'colorado','ct':'connecticut','de':'delaware','fl':'florida','ga':'georgia','hi':'hawaii','ia':'iowa','id':'idaho','il':'illinois','in':'indiana', 'ks':'kansas','ky':'kentucky', 'la':'louisiana','me':'maine','md':'maryland','ma':'massachusetts','mi':'michigan', 'mn':'minnesota','ms':'mississippi','mo':'missouri', 'mt':'montana', 'nd':'north dakota', 'ne':'nebraska','nh':'new hampshire','nj':'new jersey','nm':'new mexico','ny':'new york','nc':'north carolina', 'nv':'nevada','oh':'ohio','ok':'oklahoma', 'or':'oregon','pa':'pennsylvania','ri':'rhode island','sc':'south carolina','sd':'south dakota','tn':'tennessee','tx':'texas','ut':'utah','vt':'vermont','va':'virginia','wa':'washington','wv':'west virginia','wi':'wisconsin','wy':'wyoming'}
     oa_root = Path('/home/pat/projects/osmand_map_creation/osmand_osm/osm/us/')
+    # root assumed to be child folder of pbf_output
     root = Path('/home/pat/projects/osmand_map_creation/osmand_osm/osm/')
+    pbf_output = root.parent
     master_list = {}
+    # id to count down from for each state
     id = 2**33
     master_list = create_master_list(state, master_list, oa_root)
     if args.load_oa == True:
@@ -165,7 +184,7 @@ def run_all(state):
         master_list = output_osm(state, master_list, id, root)
     if args.update_osm == True:
         update_osm(state, state_expander)
-    merge(state, master_list, state_expander)
+    merge(state, master_list, state_expander, pbf_output)
 
 
 if __name__ == '__main__':
