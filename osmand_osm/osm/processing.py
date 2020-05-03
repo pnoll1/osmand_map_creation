@@ -52,18 +52,34 @@ def pg2osm(path, id_start, state):
     number_field = 'number'
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
-        os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=\'\' and {2}!=\'0\'"'.format(id_start, name, number_field, state))
+        try:
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=\'\' and {2}!=\'0\'"'.format(id_start, name, number_field, state))
+        except Exception:
+            print('ogr2osm failure')
+            raise
+            return id_start
         stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
         # handle files with hashes only
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
         except Exception:
             print('{0}_{1} is hashes only'.format(name, state))
+            raise
             return id_start
     elif 'integer' in r or 'numeric' in r:
-        os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=0"'.format(id_start, name, number_field, state))
+        try:
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=0"'.format(id_start, name, number_field, state))
+        except Exception:
+            print('ogr2osm failure')
+            raise
+            return id_start
         stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
-        id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+        try:
+            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+        except Exception:
+            print('{0}_{1} is hashes only'.format(name, state))
+            raise
+            return id_start
     # handle empty file
     else:
         print('{0}_{1} is empty'.format(name, state))
