@@ -21,7 +21,18 @@ parser.add_argument('--update-oa', action='store_true')
 parser.add_argument('--update-osm', action='store_true')
 parser.add_argument('--load-oa', action='store_true')
 parser.add_argument('--output-osm', action='store_true')
+parser.add_argument('--quality-check', action='store_true')
+parser.add_argument('--filter-data', action='store_true')
+parser.add_argument('--slice', action='store_true')
+parser.add_argument('--all', action='store_true', help='use all options')
 args = parser.parse_args()
+if args.all:
+    args.update_oa == True
+    args.update_osm == True
+    args.load_oa == True
+    args.output_osm == True
+    args.quality_check == True
+    args.filter_data == True
 state_list = vars(args)['state-list']
 # state_list = ['mt']
 
@@ -179,17 +190,19 @@ def prep_for_qa(state, state_expander, master_list):
     output: stats for last source ran, state extract and final file
     '''
     state_expanded = state_expander.get(state)
+    state_expanded = state_expanded.replace(' ', '-')
     # osmium sort runs everything in memory, may want to use osmosis instead
-    run('osmium sort --overwrite {0}/Us_{1}_northamerica_improved.osm.pbf -o {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, encoding='utf8')
+    run('osmium sort --overwrite {0}/Us_{1}_northamerica_alpha.osm.pbf -o {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, encoding='utf8')
     # find last source ran
     file_list = master_list.get(state)
-    last_source = Path(file_list[-1]).with_suffix('.osm')
+    last_source = Path(Path(file_list[-1]).as_posix().replace('us/', '').replace('.vrt', '_addresses.osm'))
+    print(last_source.as_posix())
     # get data for last source ran
     stats = run('osmium fileinfo -ej {0}'.format(last_source), shell=True, capture_output=True, encoding='utf8')
     # get data for OSM extract
-    stats_state = run('osmium fileinfo -ej {0}-latest.osm.pbf'.format(state_expanded), shell=True, capture_output=True, encoding='utf8')
+    stats_state = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True, encoding='utf8')
     # get data for completed state file
-    stats_final = run('osmium fileinfo -ej Us_{0}_northamerica_alpha.osm.pbf'.format(state_expanded), shell=True, capture_output=True, encoding='utf8')
+    stats_final = run('osmium fileinfo -ej {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True, encoding='utf8')
     return stats, stats_state, stats_final
 
 def quality_check(stats, stats_state, stats_final):
@@ -197,6 +210,7 @@ def quality_check(stats, stats_state, stats_final):
     input: stats for last source ran, state extract and final file
     output: boolean that is True for no issues or False for issues
     '''
+    ready_to_move = True
     # file is not empty
     # Check if items have unique ids
     if json.loads(stats_final.stdout)['data']['multiple_versions'] == 'True':
@@ -208,39 +222,62 @@ def quality_check(stats, stats_state, stats_final):
         ready_to_move = False
     return ready_to_move
 
-def move(state, state_expander, ready_to_move, pbf_output):
+def move(state, state_expander, ready_to_move, pbf_output, sliced_state=[]):
     '''
     input: state abbrev, state_expander dict, ready_to_move boolean, pbf_output location
+    action: moves final file to pbf_output location
     output: nothing
     '''
     state_expanded = state_expander.get(state)
-    if ready_to_move:
-        shutil.move('{0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), pbf_output)
+    state_expanded = state_expanded.replace(' ', '-')
+    # move sliced files
+    if len(sliced_state) > 0 and ready_to_move:
+        for slice_config in sliced_state:
+            slice_name = slice_config[0]
+            run(['mv','{0}/Us_{1}_{2}_northamerica_alpha.osm.pbf'.format(state, state_expanded, slice_name), pbf_output])
+    # move all other files
+    elif ready_to_move:
+        run(['mv','{0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), pbf_output])
 
 def filter_data(state, master_list):
     file_list = master_list.get(state)
+    name = path.stem
+    number_field = 'number'
     for j in file_list:
-        # check for unicode control characters
-        r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8')
-
+        # check for illegal unicode chars
+        r = run('psql -d gis -c "DELETE from \\"{1}_{2}\\" where {0}="--";"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8')
+        print('Removed -- from {0}_{1}'.format(name, state))
+        # works in sql, python has issues, seems to read octals in unicode causing issues
+        # select * from statewide_fl where number ~ '[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]';
+        # \x00 \UD800-\UDFFF
+        # r = run('psql -d gis -c "DELETE from \\"{1}_{2}\\" where {0} ~ "[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]";"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8')
+        # take standard shell and run through shlex.split to use run properly
+        subprocess.run( ['psql', '-d', 'gis', '-c', "Select * from statewide_fl where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';"], capture_output=True, encoding='utf8')
+        print('Removed illegal unicode from {0}_{1}'.format(name, state))
 
 def slice(state, state_expander):
     '''
     input: state, state_expander, (name of slice and bounding box coordinates in lon,lat,lon,lat)
-    output: sliced files name according to config
+    action: slices merged files according to config
+    output: config of sliced state
 
     # states above ~200MB can crash osmand map generator, slice into smaller regions before processing
     '''
     config = {}
-    config['colorado'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
-    config['florida'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '79.508,24.237,-82.579,27.079']]
+    config['co'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
+    config['fl'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '79.508,24.237,-82.579,27.079']]
     state_expanded = state_expander.get(state)
-    for state in config.keys():
+    if state in config.keys():
         for slice_config in config[state]:
             # better as dict?
             slice_name = slice_config[0]
             bounding_box = slice_config[1]
-            run('osmium extract -b {3} -o {0}/Us_{1}_{2}_northamerica_alpha.osm.pbf {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded, slice_name, bounding_box), shell=True, capture_output=True, encoding='utf8')
+            try:
+                run('osmium extract -O -b {3} -o {0}/Us_{1}_{2}_northamerica_alpha.osm.pbf {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
+            except Exception as e:
+                print(e.stderr)
+        sliced_state = config[state]
+        return sliced_state
 
 # run osmand map creator
 # batch.xml needs to be setup
@@ -261,16 +298,21 @@ def run_all(state):
     if args.load_oa == True:
         load_oa(state, master_list)
     # filter_data(state, master_list)
-    if args.output_osm == True:
+    if args.output_osm or args.quality_check:
         master_list = output_osm(state, master_list, id, root)
     if args.update_osm == True:
         update_osm(state, state_expander)
-    merge(state, master_list, state_expander)
-    # prep_for_qa(state, state_expander, pbf_output)
+    if args.output_osm:
+        merge(state, master_list, state_expander)
+    # allows running without quality check
     ready_to_move = True
-    # ready_to_move = quality_check(state, master_list)
-    slice(state, state_expander)
-    move(state, state_expander, ready_to_move, pbf_output) 
+    if args.quality_check:
+        stats, stats_state, stats_final = prep_for_qa(state, state_expander, master_list)
+        ready_to_move = quality_check(stats, stats_state, stats_final)
+    if args.slice:
+        sliced_state = slice(state, state_expander)
+    if args.output_osm:
+        move(state, state_expander, ready_to_move, pbf_output, sliced_state) 
 
 if __name__ == '__main__':
     # memory can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
