@@ -20,7 +20,7 @@ parser.add_argument('--output-osm', action='store_true')
 args = parser.parse_args()
 
 # ensure compatibility with maps.me build pipeline, must be positive and 48 bits or below
-id_start = 2**33  # worked with some data issues 2**33-2*10**6, counts down
+id_start = 2**34  # worked with some data issues 2**33-2*10**6, counts down
 
 
 def shp2osm(name, input_name, id_start, co=True):
@@ -165,8 +165,8 @@ id_10 = shp2osm('franklin', 'franklin_co_addresses.shp', id_9)
 id_11 = pg2osm('kennewick', 'streetnumber', id_10)
 id_12 = pg2osm('skagit', 'housenumber', id_11)
 # grant is sql keyword, needs to be double quoted and escaped from multiple shells
-id = pg2osm('grant', 'number', id_12)
-id = pg2osm('island', 'addrnum', id)
+id_13 = pg2osm('grant', 'number', id_12)
+id_14 = pg2osm('island', 'addrnum', id_13)
 # esri2geojson http://www.skagitcounty.net/gispublic/rest/services/Assessor/PropertyMap/MapServer/3 skagit_co_addresses.geojson
 # select * from planet_osm_polygon, skagit where ST_Disjoint(planet_osm_polygon.way,ST_Transform(skagit.wkb_geometry,3857));
 # esri2geojson https://maps.ci.kennewick.wa.us/arcgis/rest/services/Public/AllGISLayers/MapServer/92/ kennewick_co_addresses.geojson

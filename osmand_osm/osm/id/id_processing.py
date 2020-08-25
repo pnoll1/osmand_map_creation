@@ -114,15 +114,15 @@ os.system('osmium merge -Of pbf ada_co_addresses.osm kootenai_co_addresses.osm c
 # sort ascending for maps.me(osmconvert portion)
 os.system('osmium sort --overwrite Us_idaho_northamerica_improved.osm.pbf -o Us_idaho_northamerica_improved.osm.pbf')
 # Prep for QA
-stats = run('osmium fileinfo -ej marion_co_addresses.osm', shell=True, capture_output=True, encoding='utf8')
-stats_final = run('osmium fileinfo -ej Us_oregon_northamerica_improved.osm.pbf', shell=True, capture_output=True, encoding='utf8')
-stats_state = run('osmium fileinfo -ej oregon-latest.osm.pbf', shell=True, capture_output=True, encoding='utf8')
+#stats = run('osmium fileinfo -ej marion_co_addresses.osm', shell=True, capture_output=True, encoding='utf8')
+#stats_final = run('osmium fileinfo -ej Us_oregon_northamerica_improved.osm.pbf', shell=True, capture_output=True, encoding='utf8')
+#stats_state = run('osmium fileinfo -ej oregon-latest.osm.pbf', shell=True, capture_output=True, encoding='utf8')
 # Check if items have unique ids
-if json.loads(stats_final.stdout)['data']['multiple_versions'] == 'True':
-    print('ERROR: Multiple items with same id')
+#if json.loads(stats_final.stdout)['data']['multiple_versions'] == 'True':
+#    print('ERROR: Multiple items with same id')
 # Check if added data overlaps with OSM ids
-if json.loads(stats_state.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
-    print('ERROR: Added data overlaps with OSM data') 
+#if json.loads(stats_state.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
+#    print('ERROR: Added data overlaps with OSM data') 
 os.system('mv Us_idaho_northamerica_improved.osm.pbf ../../')
 os.system('md5sum ../../Us_idaho_northamerica_improved.osm.pbf > ../../Us_idaho_northamerica_improved.osm.pbf.md5')
 # coverage, coverage_percentage = generate_population_coverage(target_list_county)
