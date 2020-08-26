@@ -143,9 +143,9 @@ def output_osm(state, master_list, id, root):
         # catch error and log file for removal from master list
         # sql join then output once quicker?
         try:
+            print('writing osm file for ' + j.as_posix())
             id = pg2osm(j, id, state)
         except Exception:
-            print('error with pg2osm of' + j.as_posix())
             removal_list.append(j)
     # remove file from file list so merge will work
     for i in removal_list:
@@ -240,24 +240,29 @@ def move(state, state_expander, ready_to_move, pbf_output, sliced_state=[]):
         run(['mv','{0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), pbf_output])
 
 def filter_data(state, master_list):
+    '''
+    input: state, master_list
+    action: delete records with bad data
+    output: none
+    '''
     file_list = master_list.get(state)
-    name = path.stem
     number_field = 'number'
     for j in file_list:
-        # check for illegal unicode chars
+        name = j.stem
+        # delete records with -- in nubmer field eg rancho cucamonga
         r = run('psql -d gis -c "DELETE from \\"{1}_{2}\\" where {0}="--";"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8')
-        print('Removed -- from {0}_{1}'.format(name, state))
-        # works in sql, python has issues, seems to read octals in unicode causing issues
-        # select * from statewide_fl where number ~ '[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]';
-        # \x00 \UD800-\UDFFF
-        # r = run('psql -d gis -c "DELETE from \\"{1}_{2}\\" where {0} ~ "[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]";"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8')
+        print(r.stdout)
+        # print('Removed -- from {0}_{1}'.format(name, state))
         # take standard shell and run through shlex.split to use run properly
-        subprocess.run( ['psql', '-d', 'gis', '-c', "Select * from statewide_fl where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';"], capture_output=True, encoding='utf8')
-        print('Removed illegal unicode from {0}_{1}'.format(name, state))
+        # delete record with illegal unicode chars in number field
+        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}_{2}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, name, state)], capture_output=True, encoding='utf8')
+        print(r.stdout)
+        # print('Removed illegal unicode from {0}_{1}'.format(name, state))
 
 def slice(state, state_expander):
     '''
     input: state, state_expander, (name of slice and bounding box coordinates in lon,lat,lon,lat)
+    file requirement: file must be sorted for osmium extract to work; running --quality-check handles this
     action: slices merged files according to config
     output: config of sliced state
 
@@ -297,7 +302,8 @@ def run_all(state):
     master_list = create_master_list(state, master_list, oa_root)
     if args.load_oa == True:
         load_oa(state, master_list)
-    # filter_data(state, master_list)
+    if args.filter_data:
+        filter_data(state, master_list)
     if args.output_osm or args.quality_check:
         master_list = output_osm(state, master_list, id, root)
     if args.update_osm == True:
