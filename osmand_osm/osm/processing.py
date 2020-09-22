@@ -222,7 +222,7 @@ def quality_check(stats, stats_state, stats_final):
         ready_to_move = False
     return ready_to_move
 
-def move(state, state_expander, ready_to_move, pbf_output, sliced_state=[]):
+def move(state, state_expander, ready_to_move, pbf_output, sliced_state=None):
     '''
     input: state abbrev, state_expander dict, ready_to_move boolean, pbf_output location
     action: moves final file to pbf_output location
@@ -231,7 +231,7 @@ def move(state, state_expander, ready_to_move, pbf_output, sliced_state=[]):
     state_expanded = state_expander.get(state)
     state_expanded = state_expanded.replace(' ', '-')
     # move sliced files
-    if len(sliced_state) > 0 and ready_to_move:
+    if sliced_state is not None and ready_to_move:
         for slice_config in sliced_state:
             slice_name = slice_config[0]
             run(['mv','{0}/Us_{1}_{2}_northamerica_alpha.osm.pbf'.format(state, state_expanded, slice_name), pbf_output])
@@ -317,8 +317,10 @@ def run_all(state):
         ready_to_move = quality_check(stats, stats_state, stats_final)
     if args.slice:
         sliced_state = slice(state, state_expander)
-    if args.output_osm:
+    if args.output_osm and args.slice:
         move(state, state_expander, ready_to_move, pbf_output, sliced_state) 
+    elif args.output_osm:
+        move(state, state_expander, ready_to_move, pbf_output) 
 
 if __name__ == '__main__':
     # memory can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
