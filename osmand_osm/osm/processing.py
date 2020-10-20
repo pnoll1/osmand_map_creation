@@ -271,6 +271,8 @@ def slice(state, state_expander):
     config = {}
     config['co'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
     config['fl'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '79.508,24.237,-82.579,27.079']]
+    config['tx'] = [['southeast','-96.680,24.847,-93.028,30.996'],['northeast','-96.680,24.847,-93.028,30.996'],['northwest','-96.028,30.996,-108.391,36.792'],['southwest','-96.028,30.996,-107.556,25.165']]
+    config['ca'] = [['north','-119.997,41.998,-125.365,38.964'],['northcentral','-125.365,38.964,-114.049,37.029'],['central','-114.049,37.029,-123.118,34.547'],['southcentral','-123.118,34.547,-113.994,33.312'],['south','-113.994,33.312,-119.96,31.85']]
     state_expanded = state_expander.get(state)
     if state in config.keys():
         for slice_config in config[state]:
@@ -304,7 +306,7 @@ def run_all(state):
         load_oa(state, master_list)
     if args.filter_data:
         filter_data(state, master_list)
-    if args.output_osm or args.quality_check:
+    if args.output_osm:
         master_list = output_osm(state, master_list, id, root)
     if args.update_osm == True:
         update_osm(state, state_expander)
