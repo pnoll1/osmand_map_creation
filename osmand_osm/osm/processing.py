@@ -198,19 +198,30 @@ def prep_for_qa(state, state_expander, master_list):
     last_source = Path(Path(file_list[-1]).as_posix().replace('us/', '').replace('.vrt', '_addresses.osm'))
     print(last_source.as_posix())
     # get data for last source ran
-    stats = run('osmium fileinfo -ej {0}'.format(last_source), shell=True, capture_output=True, encoding='utf8')
+    try:
+        stats = run('osmium fileinfo -ej {0}'.format(last_source), shell=True, capture_output=True ,check=True , encoding='utf8')
+    except Exception as e:
+        print(e.stderr)
+        ready_to_move=False
     # get data for OSM extract
-    stats_state = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True, encoding='utf8')
+    try:
+        stats_state = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True ,check=True , encoding='utf8')
+    except Exception as e:
+        print(e.stderr)
+        ready_to_move=False
     # get data for completed state file
-    stats_final = run('osmium fileinfo -ej {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True, encoding='utf8')
+    try:
+        stats_final = run('osmium fileinfo -ej {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True ,check=True , encoding='utf8')
+    except Exception as e:
+        print(e.stderr)
+        ready_to_move=False
     return stats, stats_state, stats_final
 
-def quality_check(stats, stats_state, stats_final):
+def quality_check(stats, stats_state, stats_final, ready_to_move):
     '''
     input: stats for last source ran, state extract and final file
     output: boolean that is True for no issues or False for issues
     '''
-    ready_to_move = True
     # file is not empty
     # Check if items have unique ids
     if json.loads(stats_final.stdout)['data']['multiple_versions'] == 'True':
@@ -316,7 +327,7 @@ def run_all(state):
     ready_to_move = True
     if args.quality_check:
         stats, stats_state, stats_final = prep_for_qa(state, state_expander, master_list)
-        ready_to_move = quality_check(stats, stats_state, stats_final)
+        ready_to_move = quality_check(stats, stats_state, stats_final,ready_to_move)
     if args.slice:
         sliced_state = slice(state, state_expander)
     if args.output_osm and args.slice:
