@@ -45,16 +45,6 @@ def update_oa(url):
     run(['curl', '-o', filename, url])
     run(['unzip', '-o', filename])
 
-
-def load_csv(path, state):
-    '''
-    accepts path object of file to load and state name as string
-    loads files into postgres and generates geometry column
-    '''
-    name = path.stem
-    os.system('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite -lco OVERWRITE=YES'.format(path, name, state))
-
-
 def pg2osm(path, id_start, state):
     '''
     input path object of openaddresses file , id to start numbering at, state name as string
@@ -123,9 +113,15 @@ def create_master_list(state, master_list, oa_root):
 
 
 def load_oa(state, master_list):
+    '''
+    input: state as 2 letter abbrev., dict for sources
+    action: loads oa csv into postgres+postgis db  
+    output: none
+    '''
     file_list = master_list[state]
     for j in file_list:
-        load_csv(j, state)
+        name = path.stem
+        os.system('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite -lco OVERWRITE=YES'.format(path, name, state))
     print(state + ' ' + 'Load Finished')
     return
 
