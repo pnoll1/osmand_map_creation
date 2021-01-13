@@ -39,7 +39,9 @@ state_list = vars(args)['state-list']
 
 def update_oa(url):
     '''
-    downloads US files from OpenAddresses and unzips them, overwriting previous files
+    input: url
+    action: downloads urls and unzips them overwriting previous files
+    output: none
     '''
     filename = Path(url).name
     run(['curl', '-o', filename, url])
@@ -47,11 +49,13 @@ def update_oa(url):
 
 def pg2osm(path, id_start, state):
     '''
-    input path object of openaddresses file , id to start numbering at, state name as string
-    output osm format file excluding empty rows
+    input: path object of openaddresses file , id to start numbering at, state name as string
+    action: creates osm format file excluding rows with empty or 0 number fields from postgres db
+    output: finishing id if successfull, input id if failed
     '''
     name = path.stem
     number_field = 'number'
+    # find type of number field
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
         try:
@@ -127,6 +131,11 @@ def load_oa(state, master_list):
 
 
 def output_osm(state, master_list, id, root):
+    '''
+    input: state as 2 letter abbrev., dict for sources, id to start from, root of working path
+    action: create folder for osm files, call pg2osm, remove failed sources from master list
+    output: master_list with sources that were successfully written to file
+    '''
     file_list = master_list.get(state)
     removal_list = []
     # create folder for osm files
@@ -150,8 +159,12 @@ def output_osm(state, master_list, id, root):
     return master_list
 
 
-# update osm data
 def update_osm(state, state_expander):
+    '''
+    input: state as 2 letter abbrev., dict to expand state abbrev.
+    action: downloads osm extract to corresponding folder
+    output: none
+    '''
     state_expanded = state_expander.get(state)
     # format for url
     state_expanded = state_expanded.replace(' ', '-')
@@ -162,7 +175,8 @@ def update_osm(state, state_expander):
 def merge(state, master_list, state_expander):
     '''
     input: state as 2 letter abbrev., dict of sources to be merged, dict to expand state abbrev. to full name
-    output: merged state pbf in state folder
+    action: merged state pbf in state folder
+    output: none
     '''
     list_files_string = []
     file_list = master_list.get(state)
@@ -293,12 +307,7 @@ def slice(state, state_expander):
         sliced_state = config[state]
         return sliced_state
 
-# run osmand map creator
-# batch.xml needs to be setup
-# move files into osm directory defined in batch.xml
-# java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx6300M -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml
-
-
+# main program flow
 def run_all(state):
     state_expander = {'al':'alabama', 'ak':'alaska','ar':'arkansas','az':'arizona','ca':'california','co':'colorado','ct':'connecticut', 'dc':'district of columbia','de':'delaware','fl':'florida','ga':'georgia','hi':'hawaii','ia':'iowa','id':'idaho','il':'illinois','in':'indiana', 'ks':'kansas','ky':'kentucky', 'la':'louisiana','me':'maine','md':'maryland','ma':'massachusetts','mi':'michigan', 'mn':'minnesota','ms':'mississippi','mo':'missouri', 'mt':'montana', 'nd':'north dakota', 'ne':'nebraska','nh':'new hampshire','nj':'new jersey','nm':'new mexico','ny':'new york','nc':'north carolina', 'nv':'nevada','oh':'ohio','ok':'oklahoma', 'or':'oregon','pa':'pennsylvania','ri':'rhode island','sc':'south carolina','sd':'south dakota','tn':'tennessee','tx':'texas','ut':'utah','vt':'vermont','va':'virginia','wa':'washington','wv':'west virginia','wi':'wisconsin','wy':'wyoming'}
     oa_root = Path('/home/pat/projects/osmand_map_creation/osmand_osm/osm/us/')
@@ -332,8 +341,9 @@ def run_all(state):
         move(state, state_expander, ready_to_move, pbf_output) 
 
 if __name__ == '__main__':
-    # memory can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
+    # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
     with Pool(2) as p:
+        # OA regions don't correspond to states and download slowly, run before main flow
         if args.update_oa == True:
             oa_urls = ['https://data.openaddresses.io/openaddr-collected-us_midwest.zip', 'https://data.openaddresses.io/openaddr-collected-us_south.zip', 'https://data.openaddresses.io/openaddr-collected-us_west.zip', 'https://data.openaddresses.io/openaddr-collected-us_northeast.zip']
             p.map(update_oa, oa_urls)
