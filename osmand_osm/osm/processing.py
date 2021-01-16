@@ -16,7 +16,7 @@ import shutil
 
 # commandline argument setup
 parser = argparse.ArgumentParser(description='Process address data to a single osm file per state')
-parser.add_argument('state-list', nargs='+', help='lowercase 2 letter state abbreviation')
+parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
 parser.add_argument('--update-oa', action='store_true', help='downloads OA data for entire US')
 parser.add_argument('--load-oa', action='store_true', help='loads OA data into database, overwriting previous')
 parser.add_argument('--filter-data', action='store_true', help='delete unwanted data from database')
@@ -33,9 +33,48 @@ if args.all:
     args.output_osm == True
     args.quality_check == True
     args.filter_data == True
-state_list = vars(args)['state-list']
-# state_list = ['mt']
+area_list = vars(args)['area-list']
+# follows geofabrik conventions
+region_lookup = {'north-america':['us', 'ca', 'mx']}
+country_name_expander = {'ca':'canada', 'mx':'mexico', 'us':'us'}
+name_expander = {'us':{'al':'alabama', 'ak':'alaska','ar':'arkansas','az':'arizona','ca':'california','co':'colorado','ct':'connecticut', 'dc':'district of columbia','de':'delaware','fl':'florida','ga':'georgia','hi':'hawaii','ia':'iowa','id':'idaho','il':'illinois','in':'indiana', 'ks':'kansas','ky':'kentucky', 'la':'louisiana','me':'maine','md':'maryland','ma':'massachusetts','mi':'michigan', 'mn':'minnesota','ms':'mississippi','mo':'missouri', 'mt':'montana', 'nd':'north dakota', 'ne':'nebraska','nh':'new hampshire','nj':'new jersey','nm':'new mexico','ny':'new york','nc':'north carolina', 'nv':'nevada','oh':'ohio','ok':'oklahoma', 'or':'oregon','pa':'pennsylvania','ri':'rhode island','sc':'south carolina','sd':'south dakota','tn':'tennessee','tx':'texas','ut':'utah','vt':'vermont','va':'virginia','wa':'washington','wv':'west virginia','wi':'wisconsin','wy':'wyoming'}}
 
+# download https://download.geofabrik.de/index-v1.json prior to running
+def geofabrik_lookup(working_area):
+    '''
+    input: iso3166-2 code
+    output: geofabrik pbf url
+    '''
+    with open('geofabrik_index-v1.json') as index_file:
+        geofabrik_index = json.load(index_file)
+        area_list = geofabrik_index[features]
+        for i in area_list:
+            try:
+                # handle countries iso3166-1
+                # if i['properties']['iso3166-1:alpha2']==[state.short_name]:
+                # handle subdivisions iso3166-2
+                if i['properties']['iso3166-2']==[state.country.upper()+'-'+state.short_name.upper()]:
+                    return i['properties']['url']['pbf']
+            except:
+                pass
+    # could not find matching area
+    url = None
+    return url
+     
+
+class WorkingArea():
+    def __init__(self, name):
+        self.name = name
+        name_list = name.split(':')
+        self.short_name = name_list[1]
+        # self.geofabrik_region = region_lookup[country]
+        self.country = name_list[0]
+        self.directory = Path(self.country + '/' + self.short_name)
+        # self.country_expanded_name = country_name_expander[country]
+        # self.expanded_name = subregion.expander[short_name]
+
+    def __string__(self):
+        return str(self.short_name)
 
 def update_oa(url):
     '''
@@ -94,15 +133,14 @@ def pg2osm(path, id_start, state):
     return id_end
 
 
-def create_master_list(state, master_list, oa_root):
+def create_master_list(working_area, master_list):
     '''
     input: state as 2 letter abbrev., dict for sources to go into, root directory for oa
     output: dict with 2 letter state abbrev. as key and list of sources as value
     goes through each state folder and creates list of vrt files
     '''
-    oa_state_folder = oa_root.joinpath(Path(state))
     file_list = [] 
-    for filename in oa_state_folder.iterdir():
+    for filename in working_area.directory.iterdir():
         # - is not allowed in postgres
         if '-' in filename.name and filename.suffix == '.vrt':
             filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
@@ -111,8 +149,8 @@ def create_master_list(state, master_list, oa_root):
         elif filename.suffix == '.vrt':
             file_list.append(filename)
         
-    master_list[state] = file_list
-    print(state + ' ' + 'Master List Created')
+    master_list[working_area.short_name] = file_list
+    print(working_area.name + ' ' + 'Master List Created')
     return master_list
 
 
@@ -308,16 +346,16 @@ def slice(state, state_expander):
         return sliced_state
 
 # main program flow
-def run_all(state):
-    state_expander = {'al':'alabama', 'ak':'alaska','ar':'arkansas','az':'arizona','ca':'california','co':'colorado','ct':'connecticut', 'dc':'district of columbia','de':'delaware','fl':'florida','ga':'georgia','hi':'hawaii','ia':'iowa','id':'idaho','il':'illinois','in':'indiana', 'ks':'kansas','ky':'kentucky', 'la':'louisiana','me':'maine','md':'maryland','ma':'massachusetts','mi':'michigan', 'mn':'minnesota','ms':'mississippi','mo':'missouri', 'mt':'montana', 'nd':'north dakota', 'ne':'nebraska','nh':'new hampshire','nj':'new jersey','nm':'new mexico','ny':'new york','nc':'north carolina', 'nv':'nevada','oh':'ohio','ok':'oklahoma', 'or':'oregon','pa':'pennsylvania','ri':'rhode island','sc':'south carolina','sd':'south dakota','tn':'tennessee','tx':'texas','ut':'utah','vt':'vermont','va':'virginia','wa':'washington','wv':'west virginia','wi':'wisconsin','wy':'wyoming'}
-    oa_root = Path('/home/pat/projects/osmand_map_creation/osmand_osm/osm/us/')
+def run_all(area):
     # root assumed to be child folder of pbf_output
     root = Path('/home/pat/projects/osmand_map_creation/osmand_osm/osm/')
     pbf_output = root.parent
     master_list = {}
     # id to count down from for each state
     id = 2**33
-    master_list = create_master_list(state, master_list, oa_root)
+    working_area = WorkingArea(area)
+    print(working_area.short_name)
+    master_list = create_master_list(working_area, master_list)
     if args.load_oa == True:
         load_oa(state, master_list)
     if args.filter_data:
@@ -325,6 +363,7 @@ def run_all(state):
     if args.output_osm:
         master_list = output_osm(state, master_list, id, root)
     if args.update_osm == True:
+        url = iso3166_to_geofabrik_url(state)
         update_osm(state, state_expander)
     if args.output_osm:
         merge(state, master_list, state_expander)
@@ -347,4 +386,4 @@ if __name__ == '__main__':
         if args.update_oa == True:
             oa_urls = ['https://data.openaddresses.io/openaddr-collected-us_midwest.zip', 'https://data.openaddresses.io/openaddr-collected-us_south.zip', 'https://data.openaddresses.io/openaddr-collected-us_west.zip', 'https://data.openaddresses.io/openaddr-collected-us_northeast.zip']
             p.map(update_oa, oa_urls)
-        p.map(run_all, state_list)
+        p.map(run_all, area_list)
