@@ -95,7 +95,7 @@ def pg2osm(path, id_start, working_area):
     output: finishing id if successfull, input id if failed
     '''
     source_name = path.stem
-    numbier_field = 'number'
+    number_field = 'number'
     working_table = '{0}_{1}_{2}'.format(working_area.country, working_area.short_name, source_name)
     # find type of number field
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8').stdout
@@ -106,24 +106,29 @@ def pg2osm(path, id_start, working_area):
             print('ogr2osm failure')
             raise
             return id_start
-        def handle_hashes_only(stats, working_area, working_table, source_name):
-            stats = run('osmium fileinfo -ej {0}/{1}_addresses.osm'.format(working_area.directory, source_name), shell=True, capture_output=True, encoding='utf8')
-            # handle files with hashes only
-            try:
-                id_end = json.loads(stats.stdout)['data']['minid']['nodes']
-            except Exception:
-                print('{0} is hashes only'.format(working_table))
-                raise
-                return id_start
-        handle_hashes_only(stats, working_area, working_table, source_name)
+        # handle files with hashes only
+        stats = run('osmium fileinfo -ej {0}/{1}_addresses.osm'.format(working_area.directory, source_name), shell=True, capture_output=True, encoding='utf8')
+        try:
+            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+        except Exception:                
+            print('{0} is hashes only'.format(working_table))
+            raise
+            return id_start
     elif 'integer' in r or 'numeric' in r:
         try:
             os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1}/{2}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{3}\\" where {4} is not null and {4}!=0"'.format(id_start, working_area.directory, source_name, working_table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
+            return id_start 
+        # handle files with hashes only
+        stats = run('osmium fileinfo -ej {0}/{1}_addresses.osm'.format(working_area.directory, source_name), shell=True, capture_output=True, encoding='utf8')
+        try:
+            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+        except Exception:                
+            print('{0} is hashes only'.format(working_table))
+            raise
             return id_start
-        handle_hashes_only(stats, working_area, working_table, source_name)
     # handle empty file
     else:
         print('{0} is empty'.format(working_table))
@@ -179,7 +184,8 @@ def output_osm(working_area, id):
         try:
             print('writing osm file for ' + j.as_posix())
             id = pg2osm(j, id, working_area)
-        except Exception:
+        except Exception as e:
+            print(e)
             removal_list.append(j)
     # remove file from file list so merge will work
     for i in removal_list:
@@ -197,26 +203,25 @@ def update_osm(working_area, url):
     return
 
 
-def merge(state, master_list, state_expander):
+def merge(working_area):
     '''
     input: state as 2 letter abbrev., dict of sources to be merged, dict to expand state abbrev. to full name
     action: merged state pbf in state folder
     output: none
     '''
+    # create list of files as strings
     list_files_string = []
-    file_list = master_list.get(state)
-    for i in file_list:
+    for i in working_area.master_list:
         list_files_string.append(i.as_posix())
-    file_list_string = ' '.join(list_files_string).replace('us/', '').replace('.vrt', '_addresses.osm')
-    state_expanded = state_expander.get(state)
-    state_expanded = state_expanded.replace(' ', '-')
+    # create space separated string that lists all source files in osm format
+    file_list_string = ' '.join(list_files_string).replace('.vrt', '_addresses.osm')
     try:
-        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/Us_{2}_northamerica_alpha.osm.pbf'.format(file_list_string, state, state_expanded), shell=True, capture_output=True, check=True, encoding='utf8')
+        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}_{2}_alpha.osm.pbf'.format(file_list_string, working_area.directory, working_area.short_name, working_area.country), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
         print(e.stderr)
-        print(state + ' ' + 'Merge Failed')
+        print(working_area.name + ' ' + 'Merge Failed')
         return
-    print(state + ' ' + 'Merge Finished')
+    print(working_area.name + ' ' + 'Merge Finished')
     return
 
 def prep_for_qa(state, state_expander, master_list):
@@ -268,22 +273,20 @@ def quality_check(stats, stats_state, stats_final, ready_to_move):
         ready_to_move = False
     return ready_to_move
 
-def move(state, state_expander, ready_to_move, pbf_output, sliced_state=None):
+def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     '''
     input: state abbrev, state_expander dict, ready_to_move boolean, pbf_output location
     action: moves final file to pbf_output location
     output: nothing
     '''
-    state_expanded = state_expander.get(state)
-    state_expanded = state_expanded.replace(' ', '-')
     # move sliced files
-    if sliced_state is not None and ready_to_move:
-        for slice_config in sliced_state:
+    if sliced_area is not None and ready_to_move:
+        for slice_config in sliced_area:
             slice_name = slice_config[0]
-            run(['mv','{0}/Us_{1}_{2}_northamerica_alpha.osm.pbf'.format(state, state_expanded, slice_name), pbf_output])
+            run(['mv','{0}/{1}_{2}_{3}_alpha.osm.pbf'.format(working_area.directory, working_area.country, working_area.short_name, slice_name), pbf_output])
     # move all other files
     elif ready_to_move:
-        run(['mv','{0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), pbf_output])
+        run(['mv','{0}/{1}_{2}_alpha.osm.pbf'.format(working_area.directory, working_area.country, working_area.short_name), pbf_output])
 
 def filter_data(working_area):
     '''
@@ -342,6 +345,7 @@ def run_all(area):
     id = 2**33
     working_area = WorkingArea(area)
     master_list = create_master_list(working_area, master_list)
+    print(working_area.master_list)
     if args.load_oa == True:
         load_oa(working_area)
     if args.filter_data:
@@ -352,7 +356,7 @@ def run_all(area):
         url = geofabrik_lookup(working_area)
         update_osm(working_area, url)
     if args.output_osm:
-        merge(state, master_list, state_expander)
+        merge(working_area)
     # allows running without quality check
     ready_to_move = True
     if args.quality_check:
@@ -361,9 +365,9 @@ def run_all(area):
     if args.slice:
         sliced_state = slice(state, state_expander)
     if args.output_osm and args.slice:
-        move(state, state_expander, ready_to_move, pbf_output, sliced_state) 
+        move(working_area, ready_to_move, pbf_output, sliced_state) 
     elif args.output_osm:
-        move(state, state_expander, ready_to_move, pbf_output) 
+        move(working_area, ready_to_move, pbf_output) 
 
 if __name__ == '__main__':
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
