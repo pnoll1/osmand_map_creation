@@ -66,6 +66,7 @@ def geofabrik_lookup(working_area):
 class WorkingArea():
     def __init__(self, name):
         self.name = name
+        self.name_underscore = self.name.replace(':', '_')
         name_list = name.split(':')
         self.short_name = name_list[1]
         # self.geofabrik_region = region_lookup[country]
@@ -224,18 +225,15 @@ def merge(working_area):
     print(working_area.name + ' ' + 'Merge Finished')
     return
 
-def prep_for_qa(state, state_expander, master_list):
+def prep_for_qa(working_area):
     '''
     input: state abbrev, state_expander dict, master_list
     output: stats for last source ran, state extract and final file
     '''
-    state_expanded = state_expander.get(state)
-    state_expanded = state_expanded.replace(' ', '-')
     # osmium sort runs everything in memory, may want to use osmosis instead
-    run('osmium sort --overwrite {0}/Us_{1}_northamerica_alpha.osm.pbf -o {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, encoding='utf8')
+    run('osmium sort --overwrite {0}/{1}_alpha.osm.pbf -o {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, encoding='utf8')
     # find last source ran
-    file_list = master_list.get(state)
-    last_source = Path(Path(file_list[-1]).as_posix().replace('us/', '').replace('.vrt', '_addresses.osm'))
+    last_source = Path(Path(working_area.master_list[-1]).as_posix().replace('.vrt', '_addresses.osm'))
     print(last_source.as_posix())
     # get data for last source ran
     try:
@@ -245,13 +243,13 @@ def prep_for_qa(state, state_expander, master_list):
         ready_to_move=False
     # get data for OSM extract
     try:
-        stats_state = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_state = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         print(e.stderr)
         ready_to_move=False
     # get data for completed state file
     try:
-        stats_final = run('osmium fileinfo -ej {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_final = run('osmium fileinfo -ej {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         print(e.stderr)
         ready_to_move=False
@@ -308,7 +306,7 @@ def filter_data(working_area):
         print(r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
 
-def slice(state, state_expander):
+def slice(working_area):
     '''
     input: state, state_expander, (name of slice and bounding box coordinates in lon,lat,lon,lat)
     file requirement: file must be sorted for osmium extract to work; running --quality-check handles this
@@ -318,21 +316,20 @@ def slice(state, state_expander):
     # states above ~200MB can crash osmand map generator, slice into smaller regions before processing
     '''
     config = {}
-    config['co'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
-    config['fl'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '79.508,24.237,-82.579,27.079']]
-    config['tx'] = [['southeast','-96.680,24.847,-93.028,30.996'],['northeast','-96.680,24.847,-93.028,30.996'],['northwest','-96.028,30.996,-108.391,36.792'],['southwest','-96.028,30.996,-107.556,25.165']]
-    config['ca'] = [['north','-119.997,41.998,-125.365,38.964'],['northcentral','-125.365,38.964,-114.049,37.029'],['central','-114.049,37.029,-123.118,34.547'],['southcentral','-123.118,34.547,-113.994,33.312'],['south','-113.994,33.312,-119.96,31.85']]
-    state_expanded = state_expander.get(state)
-    if state in config.keys():
-        for slice_config in config[state]:
+    config['us:co'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
+    config['us:fl'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '79.508,24.237,-82.579,27.079']]
+    config['us:tx'] = [['southeast','-96.680,24.847,-93.028,30.996'],['northeast','-96.680,24.847,-93.028,30.996'],['northwest','-96.028,30.996,-108.391,36.792'],['southwest','-96.028,30.996,-107.556,25.165']]
+    config['us:ca'] = [['north','-119.997,41.998,-125.365,38.964'],['northcentral','-125.365,38.964,-114.049,37.029'],['central','-114.049,37.029,-123.118,34.547'],['southcentral','-123.118,34.547,-113.994,33.312'],['south','-113.994,33.312,-119.96,31.85']]
+    if working_area.name in config.keys():
+        for slice_config in config[working_area.name]:
             # better as dict?
             slice_name = slice_config[0]
             bounding_box = slice_config[1]
             try:
-                run('osmium extract -O -b {3} -o {0}/Us_{1}_{2}_northamerica_alpha.osm.pbf {0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
+                run('osmium extract -O -b {3} -o {0}/{1}_{2}_alpha.osm.pbf {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
             except Exception as e:
                 print(e.stderr)
-        sliced_state = config[state]
+        sliced_state = config[working_area.name]
         return sliced_state
 
 # main program flow
@@ -344,8 +341,7 @@ def run_all(area):
     # id to count down from for each state
     id = 2**33
     working_area = WorkingArea(area)
-    master_list = create_master_list(working_area, master_list)
-    print(working_area.master_list)
+    create_master_list(working_area, master_list)
     if args.load_oa == True:
         load_oa(working_area)
     if args.filter_data:
@@ -360,10 +356,10 @@ def run_all(area):
     # allows running without quality check
     ready_to_move = True
     if args.quality_check:
-        stats, stats_state, stats_final = prep_for_qa(state, state_expander, master_list)
+        stats, stats_state, stats_final = prep_for_qa(working_area)
         ready_to_move = quality_check(stats, stats_state, stats_final,ready_to_move)
     if args.slice:
-        sliced_state = slice(state, state_expander)
+        sliced_state = slice(working_area)
     if args.output_osm and args.slice:
         move(working_area, ready_to_move, pbf_output, sliced_state) 
     elif args.output_osm:
