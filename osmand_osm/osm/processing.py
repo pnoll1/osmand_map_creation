@@ -42,13 +42,12 @@ name_expander = {'us':{'al':'alabama', 'ak':'alaska','ar':'arkansas','az':'arizo
 # download https://download.geofabrik.de/index-v1.json prior to running
 def geofabrik_lookup(working_area):
     '''
-    input: iso3166-2 code
+    input: working_area object
     output: geofabrik pbf url
     '''
     with open('geofabrik_index-v1.json') as index_file:
         geofabrik_index = json.load(index_file)
         area_list = geofabrik_index['features']
-        #print(area_list)
         for i in area_list:
             try:
                 # handle countries iso3166-1
@@ -91,7 +90,7 @@ def update_oa(url):
 
 def pg2osm(path, id_start, working_area):
     '''
-    input: path object of openaddresses file , id to start numbering at, state name as string
+    input: path object of openaddresses file , id to start numbering at, working_area object
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
     output: finishing id if successfull, input id if failed
     '''
@@ -138,11 +137,11 @@ def pg2osm(path, id_start, working_area):
     return id_end
 
 
-def create_master_list(working_area, master_list):
+def create_master_list(working_area):
     '''
-    input: state as 2 letter abbrev., dict for sources to go into, root directory for oa
-    output: dict with 2 letter state abbrev. as key and list of sources as value
-    goes through each state folder and creates list of vrt files
+    input: working_area object
+    action: updates working_area.master_list with paths of vrt files for working area
+    output: none
     '''
     file_list = [] 
     for filename in working_area.directory.iterdir():
@@ -161,7 +160,7 @@ def create_master_list(working_area, master_list):
 
 def load_oa(working_area):
     '''
-    input: state as 2 letter abbrev., dict for sources
+    input: working_area object
     action: loads oa csv into postgres+postgis db  
     output: none
     '''
@@ -175,8 +174,8 @@ def load_oa(working_area):
 def output_osm(working_area, id):
     '''
     input: state as 2 letter abbrev., dict for sources, id to start from, root of working path
-    action: create folder for osm files, call pg2osm, remove failed sources from master list
-    output: master_list with sources that were successfully written to file
+    action: call pg2osm to write OA data in postgres to osm files, remove failed sources from master list
+    output: none
     '''
     removal_list = []
     for j in working_area.master_list:
@@ -196,7 +195,7 @@ def output_osm(working_area, id):
 
 def update_osm(working_area, url):
     '''
-    input: state as 2 letter abbrev., dict to expand state abbrev.
+    input: working_area object, geofabrik extract url
     action: downloads osm extract to corresponding folder
     output: none
     '''
@@ -206,7 +205,7 @@ def update_osm(working_area, url):
 
 def merge(working_area):
     '''
-    input: state as 2 letter abbrev., dict of sources to be merged, dict to expand state abbrev. to full name
+    input: working_area object
     action: merged state pbf in state folder
     output: none
     '''
@@ -227,7 +226,7 @@ def merge(working_area):
 
 def prep_for_qa(working_area):
     '''
-    input: state abbrev, state_expander dict, master_list
+    input: working_area object
     output: stats for last source ran, state extract and final file
     '''
     # osmium sort runs everything in memory, may want to use osmosis instead
@@ -273,7 +272,7 @@ def quality_check(stats, stats_state, stats_final, ready_to_move):
 
 def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     '''
-    input: state abbrev, state_expander dict, ready_to_move boolean, pbf_output location
+    input: working_area object, ready_to_move boolean, pbf_output location
     action: moves final file to pbf_output location
     output: nothing
     '''
@@ -288,7 +287,7 @@ def move(working_area, ready_to_move, pbf_output, sliced_area=None):
 
 def filter_data(working_area):
     '''
-    input: state, master_list
+    input: working_area object
     action: delete records with bad data
     output: none
     '''
@@ -308,7 +307,7 @@ def filter_data(working_area):
 
 def slice(working_area):
     '''
-    input: state, state_expander, (name of slice and bounding box coordinates in lon,lat,lon,lat)
+    input: working_area object, (name of slice and bounding box coordinates in lon,lat,lon,lat)
     file requirement: file must be sorted for osmium extract to work; running --quality-check handles this
     action: slices merged files according to config
     output: config of sliced state
@@ -341,7 +340,7 @@ def run_all(area):
     # id to count down from for each state
     id = 2**33
     working_area = WorkingArea(area)
-    create_master_list(working_area, master_list)
+    create_master_list(working_area)
     if args.load_oa == True:
         load_oa(working_area)
     if args.filter_data:
