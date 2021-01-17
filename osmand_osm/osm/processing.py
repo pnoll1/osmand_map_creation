@@ -47,14 +47,15 @@ def geofabrik_lookup(working_area):
     '''
     with open('geofabrik_index-v1.json') as index_file:
         geofabrik_index = json.load(index_file)
-        area_list = geofabrik_index[features]
+        area_list = geofabrik_index['features']
+        #print(area_list)
         for i in area_list:
             try:
                 # handle countries iso3166-1
                 # if i['properties']['iso3166-1:alpha2']==[state.short_name]:
                 # handle subdivisions iso3166-2
-                if i['properties']['iso3166-2']==[state.country.upper()+'-'+state.short_name.upper()]:
-                    return i['properties']['url']['pbf']
+                if i['properties']['iso3166-2']==[working_area.country.upper()+'-'+working_area.short_name.upper()]:
+                    return i['properties']['urls']['pbf']
             except:
                 pass
     # could not find matching area
@@ -70,6 +71,7 @@ class WorkingArea():
         # self.geofabrik_region = region_lookup[country]
         self.country = name_list[0]
         self.directory = Path(self.country + '/' + self.short_name)
+        self.master_list = None
         # self.country_expanded_name = country_name_expander[country]
         # self.expanded_name = subregion.expander[short_name]
 
@@ -86,48 +88,45 @@ def update_oa(url):
     run(['curl', '-o', filename, url])
     run(['unzip', '-o', filename])
 
-def pg2osm(path, id_start, state):
+def pg2osm(path, id_start, working_area):
     '''
     input: path object of openaddresses file , id to start numbering at, state name as string
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
     output: finishing id if successfull, input id if failed
     '''
-    name = path.stem
-    number_field = 'number'
+    source_name = path.stem
+    numbier_field = 'number'
+    working_table = '{0}_{1}_{2}'.format(working_area.country, working_area.short_name, source_name)
     # find type of number field
-    r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}_{2}\\" limit 1;"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8').stdout
+    r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=\'\' and {2}!=\'0\'"'.format(id_start, name, number_field, state))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1}/{2}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{3}\\" where {4} is not null and {4}!=\'\' and {4}!=\'0\'"'.format(id_start, working_area.directory, source_name, working_table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
             return id_start
-        stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
-        # handle files with hashes only
-        try:
-            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
-        except Exception:
-            print('{0}_{1} is hashes only'.format(name, state))
-            raise
-            return id_start
+        def handle_hashes_only(stats, working_area, working_table, source_name):
+            stats = run('osmium fileinfo -ej {0}/{1}_addresses.osm'.format(working_area.directory, source_name), shell=True, capture_output=True, encoding='utf8')
+            # handle files with hashes only
+            try:
+                id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+            except Exception:
+                print('{0} is hashes only'.format(working_table))
+                raise
+                return id_start
+        handle_hashes_only(stats, working_area, working_table, source_name)
     elif 'integer' in r or 'numeric' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {3}/{1}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{1}_{3}\\" where {2} is not null and {2}!=0"'.format(id_start, name, number_field, state))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1}/{2}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{3}\\" where {4} is not null and {4}!=0"'.format(id_start, working_area.directory, source_name, working_table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
             return id_start
-        stats = run('osmium fileinfo -ej {1}/{0}_addresses.osm'.format(name, state), shell=True, capture_output=True, encoding='utf8')
-        try:
-            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
-        except Exception:
-            print('{0}_{1} is hashes only'.format(name, state))
-            raise
-            return id_start
+        handle_hashes_only(stats, working_area, working_table, source_name)
     # handle empty file
     else:
-        print('{0}_{1} is empty'.format(name, state))
+        print('{0} is empty'.format(working_table))
         raise
         return id_start
     return id_end
@@ -149,64 +148,52 @@ def create_master_list(working_area, master_list):
         elif filename.suffix == '.vrt':
             file_list.append(filename)
         
-    master_list[working_area.short_name] = file_list
+    working_area.master_list = file_list
     print(working_area.name + ' ' + 'Master List Created')
-    return master_list
+    return
 
 
-def load_oa(state, master_list):
+def load_oa(working_area):
     '''
     input: state as 2 letter abbrev., dict for sources
     action: loads oa csv into postgres+postgis db  
     output: none
     '''
-    file_list = master_list[state]
-    for j in file_list:
-        name = path.stem
-        os.system('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite -lco OVERWRITE=YES'.format(path, name, state))
-    print(state + ' ' + 'Load Finished')
+    for j in working_area.master_list:
+        source_name = j.stem
+        run('ogr2ogr PG:dbname=gis {0} -nln {1}_{2}_{3} -overwrite -lco OVERWRITE=YES'.format(j, working_area.country, working_area.short_name, source_name), shell=True, capture_output=True, encoding='utf8')
+    print(working_area.name + ' ' + 'Load Finished')
     return
 
 
-def output_osm(state, master_list, id, root):
+def output_osm(working_area, id):
     '''
     input: state as 2 letter abbrev., dict for sources, id to start from, root of working path
     action: create folder for osm files, call pg2osm, remove failed sources from master list
     output: master_list with sources that were successfully written to file
     '''
-    file_list = master_list.get(state)
     removal_list = []
-    # create folder for osm files
-    state_folder = root.joinpath(Path(state))
-    try:
-        os.mkdir(state_folder)
-    except FileExistsError:
-        pass
-    for j in file_list:
+    for j in working_area.master_list:
         # catch error and log file for removal from master list
         # sql join then output once quicker?
         try:
             print('writing osm file for ' + j.as_posix())
-            id = pg2osm(j, id, state)
+            id = pg2osm(j, id, working_area)
         except Exception:
             removal_list.append(j)
     # remove file from file list so merge will work
     for i in removal_list:
-        file_list.remove(i)
-    master_list[state] = file_list 
-    return master_list
+        working_area.master_list.remove(i)
+    return
 
 
-def update_osm(state, state_expander):
+def update_osm(working_area, url):
     '''
     input: state as 2 letter abbrev., dict to expand state abbrev.
     action: downloads osm extract to corresponding folder
     output: none
     '''
-    state_expanded = state_expander.get(state)
-    # format for url
-    state_expanded = state_expanded.replace(' ', '-')
-    run('curl --output {1}/{0}-latest.osm.pbf https://download.geofabrik.de/north-america/us/{0}-latest.osm.pbf'.format(state_expanded, state), shell=True, capture_output=True, encoding='utf8')
+    run('curl --output {0}/{1}-latest.osm.pbf {2}'.format(working_area.directory, working_area.short_name, url), shell=True, capture_output=True, encoding='utf8')
     return
 
 
@@ -298,23 +285,23 @@ def move(state, state_expander, ready_to_move, pbf_output, sliced_state=None):
     elif ready_to_move:
         run(['mv','{0}/Us_{1}_northamerica_alpha.osm.pbf'.format(state, state_expanded), pbf_output])
 
-def filter_data(state, master_list):
+def filter_data(working_area):
     '''
     input: state, master_list
     action: delete records with bad data
     output: none
     '''
-    file_list = master_list.get(state)
     number_field = 'number'
-    for j in file_list:
-        name = j.stem
+    for j in working_area.master_list:
+        source_name = j.stem
+        working_table = '{0}_{1}_{2}'.format(working_area.country, working_area.short_name, source_name)
         # delete records with -- in nubmer field eg rancho cucamonga
-        r = run('psql -d gis -c "DELETE from \\"{1}_{2}\\" where {0}="--";"'.format(number_field, name, state), shell=True, capture_output=True, encoding='utf8')
+        r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed -- from {0}_{1}'.format(name, state))
         # take standard shell and run through shlex.split to use run properly
         # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}_{2}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, name, state)], capture_output=True, encoding='utf8')
+        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, working_table)], capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
 
@@ -354,17 +341,16 @@ def run_all(area):
     # id to count down from for each state
     id = 2**33
     working_area = WorkingArea(area)
-    print(working_area.short_name)
     master_list = create_master_list(working_area, master_list)
     if args.load_oa == True:
-        load_oa(state, master_list)
+        load_oa(working_area)
     if args.filter_data:
-        filter_data(state, master_list)
+        filter_data(working_area)
     if args.output_osm:
-        master_list = output_osm(state, master_list, id, root)
+        output_osm(working_area, id)
     if args.update_osm == True:
-        url = iso3166_to_geofabrik_url(state)
-        update_osm(state, state_expander)
+        url = geofabrik_lookup(working_area)
+        update_osm(working_area, url)
     if args.output_osm:
         merge(state, master_list, state_expander)
     # allows running without quality check
