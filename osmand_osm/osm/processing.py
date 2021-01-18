@@ -15,15 +15,15 @@ from multiprocessing import Pool
 import shutil
 
 # commandline argument setup
-parser = argparse.ArgumentParser(description='Process address data to a single osm file per state')
+parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
 parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
-parser.add_argument('--update-oa', action='store_true', help='downloads OA data for entire US')
+parser.add_argument('--update-oa', action='store_true', help='downloads OA data in oa_urls variable')
 parser.add_argument('--load-oa', action='store_true', help='loads OA data into database, overwriting previous')
 parser.add_argument('--filter-data', action='store_true', help='delete unwanted data from database')
 parser.add_argument('--output-osm', action='store_true', help='output data from database to OSM files')
-parser.add_argument('--update-osm', action='store_true', help='downloads latest state extract, overwrites previous')
+parser.add_argument('--update-osm', action='store_true', help='downloads latest area extract, overwrites previous')
 parser.add_argument('--quality-check', action='store_true', help='sort output file and run basic quality checks')
-parser.add_argument('--slice', action='store_true', help='splits states into smaller regions if config present')
+parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
 parser.add_argument('--all', action='store_true', help='use all options')
 args = parser.parse_args()
 if args.all:
@@ -34,10 +34,6 @@ if args.all:
     args.quality_check == True
     args.filter_data == True
 area_list = vars(args)['area-list']
-# follows geofabrik conventions
-region_lookup = {'north-america':['us', 'ca', 'mx']}
-country_name_expander = {'ca':'canada', 'mx':'mexico', 'us':'us'}
-name_expander = {'us':{'al':'alabama', 'ak':'alaska','ar':'arkansas','az':'arizona','ca':'california','co':'colorado','ct':'connecticut', 'dc':'district of columbia','de':'delaware','fl':'florida','ga':'georgia','hi':'hawaii','ia':'iowa','id':'idaho','il':'illinois','in':'indiana', 'ks':'kansas','ky':'kentucky', 'la':'louisiana','me':'maine','md':'maryland','ma':'massachusetts','mi':'michigan', 'mn':'minnesota','ms':'mississippi','mo':'missouri', 'mt':'montana', 'nd':'north dakota', 'ne':'nebraska','nh':'new hampshire','nj':'new jersey','nm':'new mexico','ny':'new york','nc':'north carolina', 'nv':'nevada','oh':'ohio','ok':'oklahoma', 'or':'oregon','pa':'pennsylvania','ri':'rhode island','sc':'south carolina','sd':'south dakota','tn':'tennessee','tx':'texas','ut':'utah','vt':'vermont','va':'virginia','wa':'washington','wv':'west virginia','wi':'wisconsin','wy':'wyoming'}}
 
 # download https://download.geofabrik.de/index-v1.json prior to running
 def geofabrik_lookup(working_area):
@@ -68,12 +64,9 @@ class WorkingArea():
         self.name_underscore = self.name.replace(':', '_')
         name_list = name.split(':')
         self.short_name = name_list[1]
-        # self.geofabrik_region = region_lookup[country]
         self.country = name_list[0]
         self.directory = Path(self.country + '/' + self.short_name)
         self.master_list = None
-        # self.country_expanded_name = country_name_expander[country]
-        # self.expanded_name = subregion.expander[short_name]
 
     def __string__(self):
         return str(self.short_name)
@@ -206,7 +199,7 @@ def update_osm(working_area, url):
 def merge(working_area):
     '''
     input: working_area object
-    action: merged state pbf in state folder
+    action: merged area pbf in area folder
     output: none
     '''
     # create list of files as strings
@@ -227,7 +220,7 @@ def merge(working_area):
 def prep_for_qa(working_area):
     '''
     input: working_area object
-    output: stats for last source ran, state extract and final file
+    output: stats for last source ran, area extract and final file
     '''
     # osmium sort runs everything in memory, may want to use osmosis instead
     run('osmium sort --overwrite {0}/{1}_alpha.osm.pbf -o {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, encoding='utf8')
@@ -242,7 +235,7 @@ def prep_for_qa(working_area):
         ready_to_move=False
     # get data for OSM extract
     try:
-        stats_state = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_area = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         print(e.stderr)
         ready_to_move=False
@@ -252,9 +245,9 @@ def prep_for_qa(working_area):
     except Exception as e:
         print(e.stderr)
         ready_to_move=False
-    return stats, stats_state, stats_final
+    return stats, stats_area, stats_final
 
-def quality_check(stats, stats_state, stats_final, ready_to_move):
+def quality_check(stats, stats_area, stats_final, ready_to_move):
     '''
     input: stats for last source ran, state extract and final file
     output: boolean that is True for no issues or False for issues
@@ -265,7 +258,7 @@ def quality_check(stats, stats_state, stats_final, ready_to_move):
         print('ERROR: Multiple items with same id')
         ready_to_move = False
     # Check if added data overlaps with OSM ids
-    if json.loads(stats_state.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
+    if json.loads(stats_area.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
         print('ERROR: Added data overlaps with OSM data')
         ready_to_move = False
     return ready_to_move
@@ -334,9 +327,8 @@ def slice(working_area):
 # main program flow
 def run_all(area):
     # root assumed to be child folder of pbf_output
-    root = Path('/home/pat/projects/osmand_map_creation/osmand_osm/osm/')
+    root = Path(os.getcwd())
     pbf_output = root.parent
-    master_list = {}
     # id to count down from for each state
     id = 2**33
     working_area = WorkingArea(area)
@@ -355,12 +347,12 @@ def run_all(area):
     # allows running without quality check
     ready_to_move = True
     if args.quality_check:
-        stats, stats_state, stats_final = prep_for_qa(working_area)
-        ready_to_move = quality_check(stats, stats_state, stats_final,ready_to_move)
+        stats, stats_area, stats_final = prep_for_qa(working_area)
+        ready_to_move = quality_check(stats, stats_area, stats_final,ready_to_move)
     if args.slice:
-        sliced_state = slice(working_area)
+        sliced_area = slice(working_area)
     if args.output_osm and args.slice:
-        move(working_area, ready_to_move, pbf_output, sliced_state) 
+        move(working_area, ready_to_move, pbf_output, sliced_area) 
     elif args.output_osm:
         move(working_area, ready_to_move, pbf_output) 
 
