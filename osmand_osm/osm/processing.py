@@ -47,7 +47,8 @@ def geofabrik_lookup(working_area):
         for i in area_list:
             try:
                 # handle countries iso3166-1
-                # if i['properties']['iso3166-1:alpha2']==[state.short_name]:
+                if i['properties']['iso3166-1:alpha2']==[working_area.name.upper()]:
+                    return i['properties']['urls']['pbf']
                 # handle subdivisions iso3166-2
                 if i['properties']['iso3166-2']==[working_area.country.upper()+'-'+working_area.short_name.upper()]:
                     return i['properties']['urls']['pbf']
@@ -63,9 +64,17 @@ class WorkingArea():
         self.name = name
         self.name_underscore = self.name.replace(':', '_')
         name_list = name.split(':')
-        self.short_name = name_list[1]
+        if len(name_list) == 2:
+            # handle iso3166-2 (country and subdivision)
+            self.short_name = name_list[1]
+            self.directory = Path(self.country + '/' + self.short_name)
+            self.is_3166_2 = True
+        elif len(name_list) == 1:
+            # handle iso3166-1 (country only)
+            self.short_name = name_list[0]
+            self.directory = Path(self.name)
+            self.is_3166_2 = False
         self.country = name_list[0]
-        self.directory = Path(self.country + '/' + self.short_name)
         self.master_list = None
 
     def __string__(self):
@@ -89,7 +98,7 @@ def pg2osm(path, id_start, working_area):
     '''
     source_name = path.stem
     number_field = 'number'
-    working_table = '{0}_{1}_{2}'.format(working_area.country, working_area.short_name, source_name)
+    working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
     # find type of number field
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
@@ -137,15 +146,24 @@ def create_master_list(working_area):
     output: none
     '''
     file_list = [] 
-    for filename in working_area.directory.iterdir():
-        # - is not allowed in postgres
-        if '-' in filename.name and filename.suffix == '.vrt':
-            filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
-            os.rename(filename, filename_new)
-            file_list.append(filename_new)
-        elif filename.suffix == '.vrt':
-            file_list.append(filename)
-        
+    for i in working_area.directory.iterdir():
+        if i.is_dir(): 
+            for filename in i.iterdir():
+                # - is not allowed in postgres
+                if '-' in filename.name and filename.suffix == '.vrt':
+                    filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
+                    os.rename(filename, filename_new)
+                    file_list.append(filename_new)
+                elif filename.suffix == '.vrt':
+                    file_list.append(filename)
+        else:    
+            # - is not allowed in postgres
+            if '-' in i.name and i.suffix == '.vrt':
+                filename_new = i.parent.joinpath(Path(i.name.replace('-', '_')))
+                os.rename(i, filename_new)
+                file_list.append(filename_new)
+            elif i.suffix == '.vrt':
+                file_list.append(i)
     working_area.master_list = file_list
     print(working_area.name + ' ' + 'Master List Created')
     return
@@ -159,7 +177,7 @@ def load_oa(working_area):
     '''
     for j in working_area.master_list:
         source_name = j.stem
-        run('ogr2ogr PG:dbname=gis {0} -nln {1}_{2}_{3} -overwrite -lco OVERWRITE=YES'.format(j, working_area.country, working_area.short_name, source_name), shell=True, capture_output=True, encoding='utf8')
+        run('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite -lco OVERWRITE=YES'.format(j, working_area.name_underscore, source_name), shell=True, capture_output=True, encoding='utf8')
     print(working_area.name + ' ' + 'Load Finished')
     return
 
@@ -209,7 +227,7 @@ def merge(working_area):
     # create space separated string that lists all source files in osm format
     file_list_string = ' '.join(list_files_string).replace('.vrt', '_addresses.osm')
     try:
-        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}_{2}_alpha.osm.pbf'.format(file_list_string, working_area.directory, working_area.short_name, working_area.country), shell=True, capture_output=True, check=True, encoding='utf8')
+        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}_alpha.osm.pbf'.format(file_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
         print(e.stderr)
         print(working_area.name + ' ' + 'Merge Failed')
@@ -273,10 +291,10 @@ def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     if sliced_area is not None and ready_to_move:
         for slice_config in sliced_area:
             slice_name = slice_config[0]
-            run(['mv','{0}/{1}_{2}_{3}_alpha.osm.pbf'.format(working_area.directory, working_area.country, working_area.short_name, slice_name), pbf_output])
+            run(['mv','{0}/{1}_{2}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name), pbf_output])
     # move all other files
     elif ready_to_move:
-        run(['mv','{0}/{1}_{2}_alpha.osm.pbf'.format(working_area.directory, working_area.country, working_area.short_name), pbf_output])
+        run(['mv','{0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), pbf_output])
 
 def filter_data(working_area):
     '''
@@ -287,7 +305,7 @@ def filter_data(working_area):
     number_field = 'number'
     for j in working_area.master_list:
         source_name = j.stem
-        working_table = '{0}_{1}_{2}'.format(working_area.country, working_area.short_name, source_name)
+        working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8')
         print(r.stdout)
@@ -341,6 +359,9 @@ def run_all(area):
         output_osm(working_area, id)
     if args.update_osm == True:
         url = geofabrik_lookup(working_area)
+        if url == None:
+            print('could not find geofabrik url for ' + working_area.name)
+            raise ValueError
         update_osm(working_area, url)
     if args.output_osm:
         merge(working_area)
