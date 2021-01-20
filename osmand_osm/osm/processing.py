@@ -45,15 +45,20 @@ def geofabrik_lookup(working_area):
         geofabrik_index = json.load(index_file)
         area_list = geofabrik_index['features']
         for i in area_list:
-            try:
-                # handle countries iso3166-1
-                if i['properties']['iso3166-1:alpha2']==[working_area.name.upper()]:
-                    return i['properties']['urls']['pbf']
-                # handle subdivisions iso3166-2
-                if i['properties']['iso3166-2']==[working_area.country.upper()+'-'+working_area.short_name.upper()]:
-                    return i['properties']['urls']['pbf']
-            except:
-                pass
+            # handle countries iso3166-1
+            if working_area.is_3166_2 == False:
+                try:
+                    if i['properties']['iso3166-1:alpha2']==[working_area.name.upper()]:
+                        return i['properties']['urls']['pbf']
+                except:
+                    pass
+            # handle subdivisions iso3166-2
+            elif working_area.is_3166_2:
+                try:
+                    if i['properties']['iso3166-2']==[working_area.country.upper()+'-'+working_area.short_name.upper()]:
+                        return i['properties']['urls']['pbf']
+                except:
+                    pass
     # could not find matching area
     url = None
     return url
@@ -64,6 +69,7 @@ class WorkingArea():
         self.name = name
         self.name_underscore = self.name.replace(':', '_')
         name_list = name.split(':')
+        self.country = name_list[0]
         if len(name_list) == 2:
             # handle iso3166-2 (country and subdivision)
             self.short_name = name_list[1]
@@ -74,7 +80,6 @@ class WorkingArea():
             self.short_name = name_list[0]
             self.directory = Path(self.name)
             self.is_3166_2 = False
-        self.country = name_list[0]
         self.master_list = None
 
     def __string__(self):
