@@ -101,6 +101,7 @@ def pg2osm(path, id_start, working_area):
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
     output: finishing id if successfull, input id if failed
     '''
+    source_path = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
     source_name = path.stem
     number_field = 'number'
     working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
@@ -108,13 +109,13 @@ def pg2osm(path, id_start, working_area):
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1}/{2}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{3}\\" where {4} is not null and {4}!=\'\' and {4}!=\'0\'"'.format(id_start, working_area.directory, source_name, working_table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source_path, working_table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
             return id_start
         # handle files with hashes only
-        stats = run('osmium fileinfo -ej {0}/{1}_addresses.osm'.format(working_area.directory, source_name), shell=True, capture_output=True, encoding='utf8')
+        stats = run('osmium fileinfo -ej {0}'.format(source_path), shell=True, capture_output=True, encoding='utf8')
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
         except Exception:                
@@ -123,13 +124,13 @@ def pg2osm(path, id_start, working_area):
             return id_start
     elif 'integer' in r or 'numeric' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1}/{2}_addresses.osm "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{3}\\" where {4} is not null and {4}!=0"'.format(id_start, working_area.directory, source_name, working_table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source_path, working_table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
             return id_start 
         # handle files with hashes only
-        stats = run('osmium fileinfo -ej {0}/{1}_addresses.osm'.format(working_area.directory, source_name), shell=True, capture_output=True, encoding='utf8')
+        stats = run('osmium fileinfo -ej {0}'.format(source_path), shell=True, capture_output=True, encoding='utf8')
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
         except Exception:                
