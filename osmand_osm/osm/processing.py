@@ -85,6 +85,12 @@ class WorkingArea():
     def __string__(self):
         return str(self.short_name)
 
+class Source():
+    def __init__(self, path):
+        self.path = path
+        self.path_osm = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
+        self.path_table = path.as_posix().replace('/','_').replace('.vrt','')
+
 def update_oa(url):
     '''
     input: url
@@ -102,9 +108,14 @@ def pg2osm(path, id_start, working_area):
     output: finishing id if successfull, input id if failed
     '''
     source_path = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
-    source_name = path.stem
     number_field = 'number'
-    working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
+    working_table = path.as_posix().replace('/','_').replace('.vrt','')
+    #working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
+    #source_name = path.stem
+    # handle case where Geofabrik has no subareas but OA does
+    #if working_area.is_3166_2 == False:
+    #    if len(parents(source_name)) == 2:
+    #        source_name = path
     # find type of number field
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
@@ -159,17 +170,17 @@ def create_master_list(working_area):
                 if '-' in filename.name and filename.suffix == '.vrt':
                     filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
                     os.rename(filename, filename_new)
-                    file_list.append(filename_new)
+                    file_list.append(Source(filename_new))
                 elif filename.suffix == '.vrt':
-                    file_list.append(filename)
+                    file_list.append(Source(filename))
         else:    
             # - is not allowed in postgres
             if '-' in i.name and i.suffix == '.vrt':
                 filename_new = i.parent.joinpath(Path(i.name.replace('-', '_')))
                 os.rename(i, filename_new)
-                file_list.append(filename_new)
+                file_list.append(Source(filename_new))
             elif i.suffix == '.vrt':
-                file_list.append(i)
+                file_list.append(Source(i))
     working_area.master_list = file_list
     print(working_area.name + ' ' + 'Master List Created')
     return
@@ -181,9 +192,8 @@ def load_oa(working_area):
     action: loads oa csv into postgres+postgis db  
     output: none
     '''
-    for j in working_area.master_list:
-        source_name = j.stem
-        run('ogr2ogr PG:dbname=gis {0} -nln {1}_{2} -overwrite -lco OVERWRITE=YES'.format(j, working_area.name_underscore, source_name), shell=True, capture_output=True, encoding='utf8')
+    for source in working_area.master_list:
+        run('ogr2ogr PG:dbname=gis {0} -nln {1} -overwrite -lco OVERWRITE=YES'.format(source.path, source.path_table), shell=True, capture_output=True, encoding='utf8')
     print(working_area.name + ' ' + 'Load Finished')
     return
 
@@ -309,16 +319,14 @@ def filter_data(working_area):
     output: none
     '''
     number_field = 'number'
-    for j in working_area.master_list:
-        source_name = j.stem
-        working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
+    for source in working_area.master_list:
         # delete records with -- in nubmer field eg rancho cucamonga
-        r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8')
+        r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, source.path_table), shell=True, capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed -- from {0}_{1}'.format(name, state))
         # take standard shell and run through shlex.split to use run properly
         # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, working_table)], capture_output=True, encoding='utf8')
+        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.path_table)], capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
 
