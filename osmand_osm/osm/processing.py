@@ -89,7 +89,7 @@ class Source():
     def __init__(self, path):
         self.path = path
         self.path_osm = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
-        self.path_table = path.as_posix().replace('/','_').replace('.vrt','')
+        self.table = path.as_posix().replace('/','_').replace('.vrt','')
 
 def update_oa(url):
     '''
@@ -101,56 +101,48 @@ def update_oa(url):
     run(['curl', '-o', filename, url])
     run(['unzip', '-o', filename])
 
-def pg2osm(path, id_start, working_area):
+def pg2osm(source, id_start, working_area):
     '''
     input: path object of openaddresses file , id to start numbering at, working_area object
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
     output: finishing id if successfull, input id if failed
     '''
-    source_path = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
     number_field = 'number'
-    working_table = path.as_posix().replace('/','_').replace('.vrt','')
-    #working_table = '{0}_{1}'.format(working_area.name_underscore, source_name)
-    #source_name = path.stem
-    # handle case where Geofabrik has no subareas but OA does
-    #if working_area.is_3166_2 == False:
-    #    if len(parents(source_name)) == 2:
-    #        source_name = path
     # find type of number field
-    r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, working_table), shell=True, capture_output=True, encoding='utf8').stdout
+    r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source_path, working_table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
             return id_start
         # handle files with hashes only
-        stats = run('osmium fileinfo -ej {0}'.format(source_path), shell=True, capture_output=True, encoding='utf8')
+        stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, encoding='utf8')
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
         except Exception:                
-            print('{0} is hashes only'.format(working_table))
+            print('{0} is hashes only'.format(source.table))
             raise
             return id_start
     elif 'integer' in r or 'numeric' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source_path, working_table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
             return id_start 
         # handle files with hashes only
-        stats = run('osmium fileinfo -ej {0}'.format(source_path), shell=True, capture_output=True, encoding='utf8')
+        stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, encoding='utf8')
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
         except Exception:                
-            print('{0} is hashes only'.format(working_table))
+            print('{0} is hashes only'.format(source.table))
             raise
             return id_start
     # handle empty file
     else:
-        print('{0} is empty'.format(working_table))
+        print('{0} is empty'.format(source.table))
         raise
         return id_start
     return id_end
@@ -205,18 +197,18 @@ def output_osm(working_area, id):
     output: none
     '''
     removal_list = []
-    for j in working_area.master_list:
+    for source in working_area.master_list:
         # catch error and log file for removal from master list
         # sql join then output once quicker?
         try:
-            print('writing osm file for ' + j.as_posix())
-            id = pg2osm(j, id, working_area)
+            print('writing osm file for ' + source.path.as_posix())
+            id = pg2osm(source, id, working_area)
         except Exception as e:
             print(e)
-            removal_list.append(j)
+            removal_list.append(source)
     # remove file from file list so merge will work
-    for i in removal_list:
-        working_area.master_list.remove(i)
+    for source in removal_list:
+        working_area.master_list.remove(source)
     return
 
 
@@ -236,14 +228,13 @@ def merge(working_area):
     action: merged area pbf in area folder
     output: none
     '''
-    # create list of files as strings
-    list_files_string = []
-    for i in working_area.master_list:
-        list_files_string.append(i.as_posix())
     # create space separated string that lists all source files in osm format
-    file_list_string = ' '.join(list_files_string).replace('.vrt', '_addresses.osm')
+    source_list_string = ''
+    for source in working_area.master_list:
+        source_list_string = source_list_string + ' ' + source.path_osm.as_posix()
+    source_list_string = source_list_string.lstrip(' ')
     try:
-        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}_alpha.osm.pbf'.format(file_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
+        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}_alpha.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
         print(e.stderr)
         print(working_area.name + ' ' + 'Merge Failed')
