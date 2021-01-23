@@ -249,12 +249,9 @@ def prep_for_qa(working_area):
     '''
     # osmium sort runs everything in memory, may want to use osmosis instead
     run('osmium sort --overwrite {0}/{1}_alpha.osm.pbf -o {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, encoding='utf8')
-    # find last source ran
-    last_source = Path(Path(working_area.master_list[-1]).as_posix().replace('.vrt', '_addresses.osm'))
-    print(last_source.as_posix())
     # get data for last source ran
     try:
-        stats = run('osmium fileinfo -ej {0}'.format(last_source), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         print(e.stderr)
         ready_to_move=False
