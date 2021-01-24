@@ -185,7 +185,7 @@ def load_oa(working_area):
     output: none
     '''
     for source in working_area.master_list:
-        run('ogr2ogr PG:dbname=gis {0} -nln {1} -overwrite -lco OVERWRITE=YES'.format(source.path, source.path_table), shell=True, capture_output=True, encoding='utf8')
+        run('ogr2ogr PG:dbname=gis {0} -nln {1} -overwrite -lco OVERWRITE=YES'.format(source.path, source.table), shell=True, capture_output=True, encoding='utf8')
     print(working_area.name + ' ' + 'Load Finished')
     return
 
@@ -309,12 +309,12 @@ def filter_data(working_area):
     number_field = 'number'
     for source in working_area.master_list:
         # delete records with -- in nubmer field eg rancho cucamonga
-        r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, source.path_table), shell=True, capture_output=True, encoding='utf8')
+        r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed -- from {0}_{1}'.format(name, state))
         # take standard shell and run through shlex.split to use run properly
         # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.path_table)], capture_output=True, encoding='utf8')
+        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.table)], capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
 
