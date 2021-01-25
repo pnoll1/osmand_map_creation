@@ -24,6 +24,7 @@ parser.add_argument('--output-osm', action='store_true', help='output data from 
 parser.add_argument('--update-osm', action='store_true', help='downloads latest area extract, overwrites previous')
 parser.add_argument('--quality-check', action='store_true', help='sort output file and run basic quality checks')
 parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
+parser.add_argument('--normal', action='store_true', help='runs all but --update-oa')
 parser.add_argument('--all', action='store_true', help='use all options')
 args = parser.parse_args()
 if args.all:
@@ -32,6 +33,14 @@ if args.all:
     args.load_oa == True
     args.output_osm == True
     args.quality_check == True
+    args.filter_data == True
+    arg.slice == True
+if args.normal:
+    args.update_osm == True
+    args.load_oa == True
+    args.output_osm == True
+    args.quality_check == True
+    args.slice == True
     args.filter_data == True
 area_list = vars(args)['area-list']
 
