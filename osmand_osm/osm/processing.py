@@ -317,7 +317,9 @@ def filter_data(working_area):
         r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.table)], capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
-
+        # delete records where number=SN eg MX countrywide
+        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0}='SN'".format(number_field, source.table)], capture_output=True, encoding='utf8')
+        print(r.stdout)
 def slice(working_area):
     '''
     input: working_area object, (name of slice and bounding box coordinates in lon,lat,lon,lat)
