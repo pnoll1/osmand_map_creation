@@ -1,7 +1,8 @@
 # osmand_map_creation
-OpenStreetMap(OSM) data + OpenAddresses(OA) data compiled for use in OSMAND
+OpenStreetMap(OSM) data + OpenAddresses(OA) data compiled for use in OSMAnd
 # Targets
-US, addresses added based on [OpenAddresses](https://openaddresses.io/)
+OSMAnd Files: North America
+Script: Worldwide depending on [GeoFabrik](https://download.geofabrik.de) and [OpenAddresses](https://openaddresses.io/) data availability
 # Usage
 Option 1:  
 Download file from releases to data folder for OSMAND and it will auto load.  
@@ -9,13 +10,13 @@ Option 2:
 Download file from releases to phone and open it. OSMAND will copy file into its data folder and load it.
 This will leave a copy of the file in the Downloads folder.
 
-Deactivate the default WA map file to ensure search pulls results from this file.  
+Deactivate the default map file(s) to ensure search pulls results from this file.  
 Restart app after changes otherwise search may not work properly. Restarting is done 
-by opening recent apps and flicking upward on app in Android 9.
+by opening recent apps and flicking upward on app in Android.
 
 # Data
-OpenAddresses provides data downloads at (http://results.openaddresses.io/).  
-OpenStreetMap extracts retrieved from (https://download.geofabrik.de)
+OpenAddresses provides data downloads at https://results.openaddresses.io/  
+[OpenStreetMap](https://openstreetmap.org) extracts retrieved from [GeoFabrik](https://download.geofabrik.de)
 
 # Processing
 ## Processing.py
