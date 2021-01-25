@@ -12,7 +12,6 @@ from subprocess import run, CalledProcessError
 from pathlib import Path
 import argparse
 from multiprocessing import Pool
-import shutil
 
 # commandline argument setup
 parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
@@ -112,7 +111,7 @@ def update_oa(url):
 
 def pg2osm(source, id_start, working_area):
     '''
-    input: path object of openaddresses file , id to start numbering at, working_area object
+    input: source object of openaddresses file , id to start numbering at, working_area object
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
     output: finishing id if successfull, input id if failed
     '''
@@ -201,7 +200,7 @@ def load_oa(working_area):
 
 def output_osm(working_area, id):
     '''
-    input: state as 2 letter abbrev., dict for sources, id to start from, root of working path
+    input: working_area object, id to start from, root of working path
     action: call pg2osm to write OA data in postgres to osm files, remove failed sources from master list
     output: none
     '''
@@ -280,7 +279,7 @@ def prep_for_qa(working_area):
 
 def quality_check(stats, stats_area, stats_final, ready_to_move):
     '''
-    input: stats for last source ran, state extract and final file
+    input: stats for last source ran, state extract, final file and ready_to_move boolean
     output: boolean that is True for no issues or False for issues
     '''
     # file is not empty
@@ -296,7 +295,7 @@ def quality_check(stats, stats_area, stats_final, ready_to_move):
 
 def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     '''
-    input: working_area object, ready_to_move boolean, pbf_output location
+    input: working_area object, ready_to_move boolean, pbf_output location, optional sliced_area config
     action: moves final file to pbf_output location
     output: nothing
     '''
