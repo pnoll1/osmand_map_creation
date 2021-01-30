@@ -394,6 +394,7 @@ if __name__ == '__main__':
     with Pool(2) as p:
         # OA regions don't correspond to states and download slowly, run before main flow
         if args.update_oa == True:
-            oa_urls = ['https://data.openaddresses.io/openaddr-collected-us_midwest.zip', 'https://data.openaddresses.io/openaddr-collected-us_south.zip', 'https://data.openaddresses.io/openaddr-collected-us_west.zip', 'https://data.openaddresses.io/openaddr-collected-us_northeast.zip', 'https://data.openaddresses.io/openaddr-collected-north_america.zip']
+            # other possible urls: https://data.openaddresses.io/openaddr-collected-us_northeast.zip https://data.openaddresses.io/openaddr-collected-us_midwest.zip https://data.openaddresses.io/openaddr-collected-us_south.zip https://data.openaddresses.io/openaddr-collected-us_west.zip https://www.countries-ofthe-world.com/countries-of-north-america.html https://data.openaddresses.io/openaddr-collected-europe.zip https://data.openaddresses.io/openaddr-collected-asia.zip https://data.openaddresses.io/openaddr-collected-south_america.zip
+            oa_urls = ['https://data.openaddresses.io/openaddr-collected-global.zip']
             p.map(update_oa, oa_urls)
         p.map(run_all, area_list)
