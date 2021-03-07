@@ -13,6 +13,10 @@ from pathlib import Path
 import argparse
 from multiprocessing import Pool
 
+#class Args():
+#    def __init__(self, **kwargs):
+#        self.__dict__.update(kwargs)
+#args = Args()
 # commandline argument setup
 parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
 parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
@@ -27,20 +31,20 @@ parser.add_argument('--normal', action='store_true', help='runs all but --update
 parser.add_argument('--all', action='store_true', help='use all options')
 args = parser.parse_args()
 if args.all:
-    args.update_oa == True
-    args.update_osm == True
-    args.load_oa == True
-    args.output_osm == True
-    args.quality_check == True
-    args.filter_data == True
-    arg.slice == True
+    args.update_oa = True
+    args.update_osm = True
+    args.load_oa = True
+    args.output_osm = True
+    args.quality_check = True
+    args.filter_data = True
+    arg.slice = True
 if args.normal:
-    args.update_osm == True
-    args.load_oa == True
-    args.output_osm == True
-    args.quality_check == True
-    args.slice == True
-    args.filter_data == True
+    args.update_osm = True
+    args.load_oa = True
+    args.output_osm = True
+    args.quality_check = True
+    args.slice = True
+    args.filter_data = True
 area_list = vars(args)['area-list']
 
 # download https://download.geofabrik.de/index-v1.json prior to running
