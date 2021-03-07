@@ -227,6 +227,18 @@ def update_osm(working_area, url):
     output: none
     '''
     run('curl --output {0}/{1}-latest.osm.pbf {2}'.format(working_area.directory, working_area.short_name, url), shell=True, capture_output=True, encoding='utf8')
+    run('curl --output {0}/{1}-latest.osm.pbf.md5 {2}.md5'.format(working_area.directory, working_area.short_name, url), shell=True, capture_output=True, encoding='utf8')
+    # filename in md5 file doesn't match downloaded name
+    # pull md5 hash from file
+    with open('{0}/{1}-latest.osm.pbf.md5'.format(working_area.directory, working_area.short_name)) as md5:
+        md5 = md5.read()
+        md5 = md5.split(' ')[0]
+    # check md5 from file with correct filename
+    try:
+        run('echo {0} {1}/{2}-latest.osm.pbf.md5 | md5sum -c'.format(md5, working_area.directory, working_area.short_name), shell=True, capture_output=True, encoding='utf8')
+    except Exception as e:
+        print('md5 check failed for ' + working_area.name)
+        raise e
     return
 
 
@@ -374,7 +386,10 @@ def run_all(area):
         if url == None:
             print('could not find geofabrik url for ' + working_area.name)
             raise ValueError
-        update_osm(working_area, url)
+        try:
+            update_osm(working_area, url)
+        except Exception as e:
+            raise e
     if args.output_osm:
         merge(working_area)
     # allows running without quality check
