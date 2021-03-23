@@ -9,7 +9,7 @@ After: 600 4th Ave Seattle
 You get a huge upgrade in coverage. No more guessing if an address exists, no more web searches for addresses!
 
 ## When
-Files posted around the 26th ewvery month
+Files posted around the 26th every month
 ## How
 Data is added from OpenAddresses. OpenAddresses collates hundreds of millions of addresses from government sources and uses the normal abbreviated address format.
 ## Where
