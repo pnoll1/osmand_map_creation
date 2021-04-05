@@ -12,12 +12,9 @@ from subprocess import run, CalledProcessError
 from pathlib import Path
 import argparse
 from multiprocessing import Pool
+# grab variables from config
+#from config import db_name, db_user, db_password
 
-#class Args():
-#    def __init__(self, **kwargs):
-#        self.__dict__.update(kwargs)
-#args = Args()
-# commandline argument setup
 parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
 parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
 parser.add_argument('--update-oa', action='store_true', help='downloads OA data in oa_urls variable')
@@ -124,7 +121,7 @@ def pg2osm(source, id_start, working_area):
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost"  --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field))
         except Exception:
             print('ogr2osm failure')
             raise
@@ -376,7 +373,7 @@ def run_all(area):
     root = Path(os.getcwd())
     pbf_output = root.parent
     # id to count down from for each state
-    id = 2**33
+    id = 2**34
     working_area = WorkingArea(area)
     create_master_list(working_area)
     if args.load_oa == True:
