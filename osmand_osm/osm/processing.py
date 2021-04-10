@@ -330,17 +330,17 @@ def filter_data(working_area, db_name):
     number_field = 'number'
     for source in working_area.master_list:
         # delete records with -- in nubmer field eg rancho cucamonga
-        r = run('psql -d {0} -c "DELETE from \\"{1}\\" where {2}="--";"'.format(db_name, source.table, number_field), shell=True, capture_output=True, encoding='utf8')
-        print(r.stdout)
+        r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
+        print('looking for -- ' + r.stdout)
         # print('Removed -- from {0}_{1}'.format(name, state))
-        # take standard shell and run through shlex.split to use run properly
         # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.table)], capture_output=True, encoding='utf8')
-        print(r.stdout)
+        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field)], capture_output=True, encoding='utf8')
+        print('looking for illegal xml ' + r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
         # delete records where number=SN eg MX countrywide
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{1}\" where {0}='SN'".format(number_field, source.table)], capture_output=True, encoding='utf8')
-        print(r.stdout)
+        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1}='SN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
+        print('looking for SN ' + r.stdout)
+
 def slice(working_area):
     '''
     input: working_area object, (name of slice and bounding box coordinates in lon,lat,lon,lat)
