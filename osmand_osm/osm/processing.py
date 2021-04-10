@@ -329,6 +329,7 @@ def filter_data(working_area, db_name):
     '''
     number_field = 'number'
     for source in working_area.master_list:
+        print('filtering {0}'.format(source.table))
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         print('looking for -- ' + r.stdout)
