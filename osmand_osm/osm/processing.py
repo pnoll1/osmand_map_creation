@@ -12,9 +12,9 @@ from subprocess import run, CalledProcessError
 from pathlib import Path
 import argparse
 from multiprocessing import Pool
-# grab variables from config
-#from config import db_name, db_user, db_password
-
+# config options
+from config import db_name, id
+# commandline argument setup
 parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
 parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
 parser.add_argument('--update-oa', action='store_true', help='downloads OA data in oa_urls variable')
@@ -110,7 +110,7 @@ def update_oa(url):
     run(['curl', '-o', filename, url])
     run(['unzip', '-o', filename])
 
-def pg2osm(source, id_start, working_area):
+def pg2osm(source, id_start, working_area, db_name):
     '''
     input: source object of openaddresses file , id to start numbering at, working_area object
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
@@ -121,7 +121,7 @@ def pg2osm(source, id_start, working_area):
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
     if 'character' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost"  --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}"  --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field, db_name))
         except Exception:
             print('ogr2osm failure')
             raise
@@ -136,7 +136,7 @@ def pg2osm(source, id_start, working_area):
             return id_start
     elif 'integer' in r or 'numeric' in r:
         try:
-            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname=gis user=pat password=password host=localhost" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field))
+            os.system('python3 /opt/ogr2osm/ogr2osm.py -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field, db_name))
         except Exception:
             print('ogr2osm failure')
             raise
@@ -187,19 +187,19 @@ def create_master_list(working_area):
     return
 
 
-def load_oa(working_area):
+def load_oa(working_area, db_name):
     '''
     input: working_area object
     action: loads oa csv into postgres+postgis db  
     output: none
     '''
     for source in working_area.master_list:
-        run('ogr2ogr PG:dbname=gis {0} -nln {1} -overwrite -lco OVERWRITE=YES'.format(source.path, source.table), shell=True, capture_output=True, encoding='utf8')
+        run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, encoding='utf8')
     print(working_area.name + ' ' + 'Load Finished')
     return
 
 
-def output_osm(working_area, id):
+def output_osm(working_area, id, db_name):
     '''
     input: working_area object, id to start from, root of working path
     action: call pg2osm to write OA data in postgres to osm files, remove failed sources from master list
@@ -211,7 +211,7 @@ def output_osm(working_area, id):
         # sql join then output once quicker?
         try:
             print('writing osm file for ' + source.path.as_posix())
-            id = pg2osm(source, id, working_area)
+            id = pg2osm(source, id, working_area, db_name)
         except Exception as e:
             print(e)
             removal_list.append(source)
@@ -321,7 +321,7 @@ def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     elif ready_to_move:
         run(['mv','{0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), pbf_output])
 
-def filter_data(working_area):
+def filter_data(working_area, db_name):
     '''
     input: working_area object
     action: delete records with bad data
@@ -330,16 +330,16 @@ def filter_data(working_area):
     number_field = 'number'
     for source in working_area.master_list:
         # delete records with -- in nubmer field eg rancho cucamonga
-        r = run('psql -d gis -c "DELETE from \\"{1}\\" where {0}="--";"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8')
+        r = run('psql -d {0} -c "DELETE from \\"{1}\\" where {2}="--";"'.format(db_name, source.table, number_field), shell=True, capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed -- from {0}_{1}'.format(name, state))
         # take standard shell and run through shlex.split to use run properly
         # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.table)], capture_output=True, encoding='utf8')
+        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{1}\" where {0} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(number_field, source.table)], capture_output=True, encoding='utf8')
         print(r.stdout)
         # print('Removed illegal unicode from {0}_{1}'.format(name, state))
         # delete records where number=SN eg MX countrywide
-        r = run( ['psql', '-d', 'gis', '-c', "delete from \"{1}\" where {0}='SN'".format(number_field, source.table)], capture_output=True, encoding='utf8')
+        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{1}\" where {0}='SN'".format(number_field, source.table)], capture_output=True, encoding='utf8')
         print(r.stdout)
 def slice(working_area):
     '''
@@ -372,16 +372,14 @@ def run_all(area):
     # root assumed to be child folder of pbf_output
     root = Path(os.getcwd())
     pbf_output = root.parent
-    # id to count down from for each state
-    id = 2**34
     working_area = WorkingArea(area)
     create_master_list(working_area)
     if args.load_oa == True:
-        load_oa(working_area)
+        load_oa(working_area, db_name)
     if args.filter_data:
-        filter_data(working_area)
+        filter_data(working_area, db_name)
     if args.output_osm:
-        output_osm(working_area, id)
+        output_osm(working_area, id, db_name)
     if args.update_osm == True:
         url = geofabrik_lookup(working_area)
         if url == None:
