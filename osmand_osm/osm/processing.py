@@ -13,7 +13,7 @@ from pathlib import Path
 import argparse
 from multiprocessing import Pool
 # config options
-from config import db_name, id
+from config import db_name, id, oa_urls, slice_config
 # commandline argument setup
 parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
 parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
@@ -24,6 +24,7 @@ parser.add_argument('--output-osm', action='store_true', help='output data from 
 parser.add_argument('--update-osm', action='store_true', help='downloads latest area extract, overwrites previous')
 parser.add_argument('--quality-check', action='store_true', help='sort output file and run basic quality checks')
 parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
+parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
 parser.add_argument('--normal', action='store_true', help='runs all but --update-oa')
 parser.add_argument('--all', action='store_true', help='use all options')
 args = parser.parse_args()
@@ -342,20 +343,13 @@ def filter_data(working_area, db_name):
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1}='SN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         print('looking for SN ' + r.stdout)
 
-def slice(working_area):
+def slice(working_area, config):
     '''
-    input: working_area object, (name of slice and bounding box coordinates in lon,lat,lon,lat)
+    input: working_area object, slice configs(defined in config file)
     file requirement: file must be sorted for osmium extract to work; running --quality-check handles this
     action: slices merged files according to config
     output: config of sliced state
-
-    # states above ~200MB can crash osmand map generator, slice into smaller regions before processing
     '''
-    config = {}
-    config['us:co'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
-    config['us:fl'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '79.508,24.237,-82.579,27.079']]
-    config['us:tx'] = [['southeast','-96.680,24.847,-93.028,30.996'],['northeast','-96.680,24.847,-93.028,30.996'],['northwest','-96.028,30.996,-108.391,36.792'],['southwest','-96.028,30.996,-107.556,25.165']]
-    config['us:ca'] = [['north','-119.997,41.998,-125.365,38.964'],['northcentral','-125.365,38.964,-114.049,37.029'],['central','-114.049,37.029,-123.118,34.547'],['southcentral','-123.118,34.547,-113.994,33.312'],['south','-113.994,33.312,-119.96,31.85']]
     if working_area.name in config.keys():
         for slice_config in config[working_area.name]:
             # better as dict?
@@ -398,7 +392,7 @@ def run_all(area):
         stats, stats_area, stats_final = prep_for_qa(working_area)
         ready_to_move = quality_check(stats, stats_area, stats_final,ready_to_move)
     if args.slice:
-        sliced_area = slice(working_area)
+        sliced_area = slice(working_area, slice_config)
     if args.output_osm and args.slice:
         move(working_area, ready_to_move, pbf_output, sliced_area) 
     elif args.output_osm:
@@ -406,10 +400,8 @@ def run_all(area):
 
 if __name__ == '__main__':
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
-    with Pool(2) as p:
+    with Pool(args.processes) as p:
         # OA regions don't correspond to states and download slowly, run before main flow
         if args.update_oa == True:
-            # other possible urls: https://data.openaddresses.io/openaddr-collected-us_northeast.zip https://data.openaddresses.io/openaddr-collected-us_midwest.zip https://data.openaddresses.io/openaddr-collected-us_south.zip https://data.openaddresses.io/openaddr-collected-us_west.zip https://www.countries-ofthe-world.com/countries-of-north-america.html https://data.openaddresses.io/openaddr-collected-europe.zip https://data.openaddresses.io/openaddr-collected-asia.zip https://data.openaddresses.io/openaddr-collected-south_america.zip
-            oa_urls = ['https://data.openaddresses.io/openaddr-collected-global.zip']
             p.map(update_oa, oa_urls)
         p.map(run_all, area_list)
