@@ -108,7 +108,7 @@ def update_oa(url):
     output: none
     '''
     filename = Path(url).name
-    run(['curl', '-o', filename, url])
+    run(['curl', '-e', 'https://results.openaddresses.io', '-A', 'opensupermaps.com', '-o', filename, url])
     run(['unzip', '-o', filename])
 
 def pg2osm(source, id_start, working_area, db_name):
