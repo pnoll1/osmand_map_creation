@@ -12,7 +12,7 @@ Then as a cron job:
 
     00 02 20 * * cd /home/pat/projects/osmand_map_creation/osmand_osm/osm/;python3 processing.py us:ak us:hi us:mt us:ut us:nv us:az us:nm us:wy us:wa us:or us:id --load-oa --filter-data --output-osm --update-osm --quality-check --slice;cd /home/pat/projects/osmand_map_creation/;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx7G -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml;cd /home/pat/projects/osmand_map_creation/osmand_osm;mv *.pbf osm/
 
-This runs the script, builds the obfs, then moves the pbfs to the osm folder. Extra ram for osmand map creator will greatly speed up builds.
+This runs the script, builds the obfs, then moves the pbfs to the osm folder. See processing.sh for an example of how many areas are batched in a shell file. Extra ram for osmand map creator will greatly speed up builds.
 
 # Data Processing
 Add sql statements in the filter_data function to remove unwanted records  
