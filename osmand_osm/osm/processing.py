@@ -298,7 +298,7 @@ def quality_check(stats, stats_area, stats_final, ready_to_move):
     '''
     # file is not empty
     # Check if items have unique ids
-    if json.loads(stats_final.stdout)['data']['multiple_versions'] == 'True':
+    if json.loads(stats_final.stdout)['data']['multiple_versions'] == True:
         print('ERROR: Multiple items with same id')
         ready_to_move = False
     # Check if added data overlaps with OSM ids
