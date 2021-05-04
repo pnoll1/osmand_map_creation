@@ -17,32 +17,35 @@ from config import db_name, id, oa_urls, slice_config
 # commandline argument setup
 parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
 parser.add_argument('area-list', nargs='+', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
+parser.add_argument('--normal', action='store_true', help='probably what you want, runs all but --update-oa')
 parser.add_argument('--update-oa', action='store_true', help='downloads OA data in oa_urls variable')
 parser.add_argument('--load-oa', action='store_true', help='loads OA data into database, overwriting previous')
 parser.add_argument('--filter-data', action='store_true', help='delete unwanted data from database')
+parser.add_argument('--merge', action='store_true', help='merge extract with address files')
 parser.add_argument('--output-osm', action='store_true', help='output data from database to OSM files')
 parser.add_argument('--update-osm', action='store_true', help='downloads latest area extract, overwrites previous')
 parser.add_argument('--quality-check', action='store_true', help='sort output file and run basic quality checks')
 parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
 parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
-parser.add_argument('--normal', action='store_true', help='runs all but --update-oa')
 parser.add_argument('--all', action='store_true', help='use all options')
 args = parser.parse_args()
 if args.all:
     args.update_oa = True
     args.update_osm = True
     args.load_oa = True
-    args.output_osm = True
-    args.quality_check = True
     args.filter_data = True
+    args.output_osm = True
+    args.merge = True
+    args.quality_check = True
     arg.slice = True
 if args.normal:
     args.update_osm = True
     args.load_oa = True
+    args.filter_data = True
     args.output_osm = True
+    args.merge = True
     args.quality_check = True
     args.slice = True
-    args.filter_data = True
 area_list = vars(args)['area-list']
 
 # download https://download.geofabrik.de/index-v1.json prior to running
@@ -384,7 +387,7 @@ def run_all(area):
             update_osm(working_area, url)
         except Exception as e:
             raise e
-    if args.output_osm:
+    if args.merge:
         merge(working_area)
     # allows running without quality check
     ready_to_move = True
