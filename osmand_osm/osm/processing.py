@@ -37,7 +37,7 @@ if args.all:
     args.output_osm = True
     args.merge = True
     args.quality_check = True
-    arg.slice = True
+    args.slice = True
 if args.normal:
     args.update_osm = True
     args.load_oa = True
