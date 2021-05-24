@@ -5,6 +5,10 @@ id = 2**34
 # openaddresses urls to download address data from
 # other possible urls: https://data.openaddresses.io/openaddr-collected-us_northeast.zip https://data.openaddresses.io/openaddr-collected-us_midwest.zip https://data.openaddresses.io/openaddr-collected-us_south.zip https://data.openaddresses.io/openaddr-collected-us_west.zip https://www.countries-ofthe-world.com/countries-of-north-america.html https://data.openaddresses.io/openaddr-collected-europe.zip https://data.openaddresses.io/openaddr-collected-asia.zip https://data.openaddresses.io/openaddr-collected-south_america.zip
 oa_urls = ['https://data.openaddresses.io/openaddr-collected-global.zip']
+# batch settings
+# list, each batch is a string
+#  batches = ['--load-oa us:ri','--load-oa jm ca:pe']
+batches = []
 # slice configs
 # dict entry with value that is list of slices. Each slice is a list with the first entry being the name as a string and second being bounding box coordinates in lon,lat,lon,lat as a string
 # file must be sorted for osmium extract to work; running --quality-check handles this
