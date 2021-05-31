@@ -13,7 +13,7 @@ from pathlib import Path
 import argparse
 from multiprocessing import Pool
 # config options
-from config import db_name, id, oa_urls, slice_config, batches
+from config import db_name, id, oa_urls, slice_config, batches, Xmx
 
 # download https://download.geofabrik.de/index-v1.json prior to running
 def geofabrik_lookup(working_area):
@@ -351,6 +351,17 @@ def parse_meta_commands():
         args.quality_check = True
         args.slice = True
 
+def update_run_all_build(args): 
+    # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
+    with Pool(args.processes) as p:
+        # OA regions don't correspond to states and download slowly, run before main flow
+        if args.update_oa == True:
+            p.map(update_oa, oa_urls)
+        p.map(run_all, area_list)
+    # build obfs
+    run('cd /home/pat/projects/osmand_map_creation/;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
+    # move files out of build folder
+    run('cd /home/pat/projects/osmand_map_creation/osmand_osm;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
 # main program flow
 def run_all(area):
     # root assumed to be child folder of pbf_output
@@ -408,12 +419,7 @@ if __name__ == '__main__':
         args = parser.parse_args()
         parse_meta_commands()
         area_list = vars(args)['area-list']  
-        # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
-        with Pool(args.processes) as p:
-            # OA regions don't correspond to states and download slowly, run before main flow
-            if args.update_oa == True:
-                p.map(update_oa, oa_urls)
-            p.map(run_all, area_list)
+        update_run_all_build(args)
     # use commands from config file if present
     if len(batches) > 0:
         for i in batches:
@@ -421,9 +427,4 @@ if __name__ == '__main__':
             args = parser.parse_args(i)
             parse_meta_commands()
             area_list = vars(args)['area-list']
-            # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
-            with Pool(args.processes) as p:
-                # OA regions don't correspond to states and download slowly, run before main flow
-                if args.update_oa == True:
-                    p.map(update_oa, oa_urls)
-                p.map(run_all, area_list)
+            update_run_all_build(args)
