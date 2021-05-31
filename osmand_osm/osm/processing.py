@@ -365,7 +365,6 @@ def update_run_all_build(args):
 # main program flow
 def run_all(area):
     # root assumed to be child folder of pbf_output
-    print(args)
     root = Path(os.getcwd())
     pbf_output = root.parent
     working_area = WorkingArea(area)
@@ -414,7 +413,6 @@ if __name__ == '__main__':
     parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
     parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
     parser.add_argument('--all', action='store_true', help='use all options')
-    print(len(batches))
     if len(batches) == 0:
         args = parser.parse_args()
         parse_meta_commands()
