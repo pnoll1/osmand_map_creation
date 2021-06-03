@@ -359,9 +359,12 @@ def update_run_all_build(args):
             p.map(update_oa, oa_urls)
         p.map(run_all, area_list)
     # build obfs
-    run('cd /home/pat/projects/osmand_map_creation/;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
+    run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
     # move files out of build folder
-    run('cd /home/pat/projects/osmand_map_creation/osmand_osm;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
+    run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
+
+def clean_file_names():
+
 # main program flow
 def run_all(area):
     # root assumed to be child folder of pbf_output
