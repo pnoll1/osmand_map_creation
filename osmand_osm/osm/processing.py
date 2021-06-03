@@ -226,7 +226,7 @@ def merge(working_area):
         source_list_string = source_list_string + ' ' + source.path_osm.as_posix()
     source_list_string = source_list_string.lstrip(' ')
     try:
-        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}_alpha.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
+        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
         print(e.stderr)
         print(working_area.name + ' ' + 'Merge Failed')
@@ -240,7 +240,7 @@ def prep_for_qa(working_area):
     output: stats for last source ran, area extract and final file
     '''
     # osmium sort runs everything in memory, may want to use osmosis instead
-    run('osmium sort --overwrite {0}/{1}_alpha.osm.pbf -o {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, encoding='utf8')
+    run('osmium sort --overwrite {0}/{1}.osm.pbf -o {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, encoding='utf8')
     # get data for last source ran
     try:
         stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
@@ -255,7 +255,7 @@ def prep_for_qa(working_area):
         ready_to_move=False
     # get data for completed state file
     try:
-        stats_final = run('osmium fileinfo -ej {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_final = run('osmium fileinfo -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         print(e.stderr)
         ready_to_move=False
@@ -287,10 +287,10 @@ def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     if sliced_area is not None and ready_to_move:
         for slice_config in sliced_area:
             slice_name = slice_config[0]
-            run(['mv','{0}/{1}_{2}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name), pbf_output])
+            run(['mv','{0}/{1}_{2}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name), pbf_output])
     # move all other files
     elif ready_to_move:
-        run(['mv','{0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore), pbf_output])
+        run(['mv','{0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), pbf_output])
 
 def filter_data(working_area, db_name):
     '''
@@ -326,7 +326,7 @@ def slice(working_area, config):
             slice_name = slice_config[0]
             bounding_box = slice_config[1]
             try:
-                run('osmium extract -O -b {3} -o {0}/{1}_{2}_alpha.osm.pbf {0}/{1}_alpha.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
+                run('osmium extract -O -b {3} -o {0}/{1}_{2}.osm.pbf {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
             except Exception as e:
                 print(e.stderr)
         sliced_state = config[working_area.name]
