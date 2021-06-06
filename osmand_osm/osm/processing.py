@@ -12,6 +12,7 @@ from subprocess import run, CalledProcessError
 from pathlib import Path
 import argparse
 from multiprocessing import Pool
+from pathlib import Path
 # config options
 from config import db_name, id, oa_urls, slice_config, batches, Xmx
 
@@ -351,6 +352,15 @@ def parse_meta_commands():
         args.quality_check = True
         args.slice = True
 
+def clean_file_names():
+    for file in Path('../osmand_obf').iterdir():
+        if '_2' in file.name:
+            directory = file.parent
+            new_filename = file.name.as_posix().replace('_2','')
+            new_file_path = directory.joinpath(Path(new_filename))
+            os.replace(file, new_file_path)
+        
+
 def update_run_all_build(args): 
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
     with Pool(args.processes) as p:
@@ -362,8 +372,7 @@ def update_run_all_build(args):
     run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
     # move files out of build folder
     run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
-
-def clean_file_names():
+    clean_file_names()
 
 # main program flow
 def run_all(area):
