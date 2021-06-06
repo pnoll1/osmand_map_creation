@@ -13,6 +13,7 @@ from pathlib import Path
 import argparse
 from multiprocessing import Pool
 from pathlib import Path
+import hashlib
 # config options
 from config import db_name, id, oa_urls, slice_config, batches, Xmx
 
@@ -62,7 +63,7 @@ class WorkingArea():
             self.directory = Path(self.name)
             self.is_3166_2 = False
         self.master_list = None
-
+        self.obf_name = self.name_underscore.capitalize() + '.obf'
     def __string__(self):
         return str(self.short_name)
 
@@ -353,13 +354,13 @@ def parse_meta_commands():
         args.slice = True
 
 def clean_file_names():
-    for file in Path('../osmand_obf').iterdir():
+    for file in Path('../../osmand_obf').iterdir():
         if '_2' in file.name:
             directory = file.parent
-            new_filename = file.name.as_posix().replace('_2','')
+            new_filename = file.name.replace('_2','')
             new_file_path = directory.joinpath(Path(new_filename))
             os.replace(file, new_file_path)
-        
+    
 
 def update_run_all_build(args): 
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
@@ -372,7 +373,6 @@ def update_run_all_build(args):
     run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
     # move files out of build folder
     run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
-    clean_file_names()
 
 # main program flow
 def run_all(area):
@@ -438,3 +438,13 @@ if __name__ == '__main__':
             parse_meta_commands()
             area_list = vars(args)['area-list']
             update_run_all_build(args)
+    clean_file_names()
+    # calculate file hashs
+    for file in Path('../../osmand_obf').iterdir():
+        if file.suffix == '.obf':
+            with open(file, 'rb') as opened_file:
+                data = opened_file.read()
+                sha256 = hashlib.sha256(data).hexdigest()
+                # write sha256 to file
+                with open(file.with_suffix('.sha256'),'w') as sha256_file:
+                    sha256_file.write(sha256 + ' ' + file.name)
