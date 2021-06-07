@@ -19,3 +19,5 @@ slice_config['us:tx'] = [['southeast','-96.680,24.847,-93.028,30.996'],['northea
 slice_config['us:ca'] = [['north','-119.997,41.998,-125.365,38.964'],['northcentral','-125.365,38.964,-114.049,37.029'],['central','-114.049,37.029,-123.118,34.547'],['southcentral','-123.118,34.547,-113.994,33.312'],['south','-113.994,33.312,-119.96,31.85']]
 # max memory allocated to Java for osmand map creator
 Xmx = '3G'
+# specify log level. Options are debug, info, warning or error
+log_level = 'info'
