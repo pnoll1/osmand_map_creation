@@ -372,6 +372,7 @@ def update_run_all_build(args):
             p.map(update_oa, oa_urls)
         p.map(run_all, area_list)
     # build obfs
+    logging.info('Builds started')
     run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
     # move files out of build folder
     run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
@@ -398,6 +399,7 @@ def run_all(area):
             update_osm(working_area, url)
         except Exception as e:
             raise e
+        logging.info('osm update finished for ' + working_area.name)
     if args.merge:
         merge(working_area)
     # allows running without quality check
@@ -405,16 +407,20 @@ def run_all(area):
     if args.quality_check:
         stats, stats_area, stats_final = prep_for_qa(working_area)
         ready_to_move = quality_check(stats, stats_area, stats_final,ready_to_move)
+        logging.info('quality check finished for ' + working_area.name)
     if args.slice:
         sliced_area = slice(working_area, slice_config)
+        logging.info('slice finished for ' + working_area.name)
     if args.output_osm and args.slice:
         move(working_area, ready_to_move, pbf_output, sliced_area) 
+        logging.info('pbf files moved to build folder for ' + working_area.name)
     elif args.output_osm:
         move(working_area, ready_to_move, pbf_output) 
+        logging.info('pbf files moved to build folder for ' + working_area.name)
 
 if __name__ == '__main__':
     log_level = getattr(logging, log_level.upper())
-    logging.basicConfig(filename='processing_{0}.log'.format(datetime.datetime.today().isoformat()), level=log_level)
+    logging.basicConfig(filename='processing_{0}.log'.format(datetime.datetime.today().isoformat()), level=log_level, format='%(asctime)s %(message)s')
     # commandline argument setup
     parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
     parser.add_argument('area-list', nargs='*', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
@@ -437,12 +443,13 @@ if __name__ == '__main__':
     # use commands from config file if present
     if len(batches) > 0:
         for i in batches:
-            i = i.split(' ')
-            args = parser.parse_args(i)
-            logging.debug(args)
+            j = i.split(' ')
+            args = parser.parse_args(j)
             parse_meta_commands()
+            logging.debug(args)
             area_list = vars(args)['area-list']
             update_run_all_build(args)
+            logging.info('obfs build stage finished for ' + i)
     clean_file_names()
     # calculate file hashs
     for file in Path('../../osmand_obf').iterdir():
@@ -453,3 +460,4 @@ if __name__ == '__main__':
                 # write sha256 to file
                 with open(file.with_suffix('.sha256'),'w') as sha256_file:
                     sha256_file.write(sha256 + ' ' + file.name)
+    logging.info('script finished')
