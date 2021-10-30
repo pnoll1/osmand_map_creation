@@ -17,7 +17,7 @@ config usage:
 
 # Data Processing
 Add sql statements in the filter_data function to remove unwanted records  
-Add to sql statements to --sql flag in ogr2osm calls to filter data without removing records
+Add sql statements to --sql flag in ogr2osm calls to filter data without removing records
 
 # Troubleshooting builds
 If builds fail, try increasing Xmx. If that doesn't work, add a slice_config to break the area into smaller pieces. Log files from osmand_map_creator are in the osmand_obf folder with the obf.gen.log suffix. 
@@ -25,11 +25,11 @@ If builds fail, try increasing Xmx. If that doesn't work, add a slice_config to 
 If data doesn't show up in finished builds check processing.py logs in osm folder. This often means unicode control characters were still in the source data after filtering. Processing.py stops processing a source once it hits a unicode control character.
 
 # Limitations
-Command line arguments are only used if batches is an empty list.
-Not all options are avaiable from cli and config file 
-Requires Geofabrik to have extract for area
-Requires OpenAddresses to have data for area
-iso3166-1-alpha2 areas are only supported if there are no iso3166-2 Geofabrik extracts eg. mx
-No deduplication
+Command line arguments are only used if batches is an empty list.  
+Not all options are avaiable from cli and config file  
+Requires Geofabrik to have extract for area  
+Requires OpenAddresses to have data for area  
+iso3166-1-alpha2 areas are only supported if there are no iso3166-2 Geofabrik extracts eg. mx  
+No deduplication  
 Running many areas with update-osm may result in Geofabrik rate limiting  
-ogr2osm xml writer will choke on unicode stops
+ogr2osm xml writer will choke on unicode stops  

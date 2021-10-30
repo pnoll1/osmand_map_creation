@@ -35,8 +35,6 @@ OpenAddresses provides data downloads at https://results.openaddresses.io/
 [OpenStreetMap](https://openstreetmap.org) extracts retrieved from [GeoFabrik](https://download.geofabrik.de)
 ## Processing.py
 OA data is loaded into Postgresql, filtered with sql, exported to osm xml format and merged with OSM area extracts while converting to osm.pbf. See docs/processing_script_usage and processing.py file.
-## OSMAnd
-Run OSMAnd Map Creator after processing.py. See [OSMAnd Map Creator Wiki](https://wiki.openstreetmap.org/wiki/OsmAndMapCreator) for help.
 
 # License
 Map Files:[ODBL 1.0](https://opendatacommons.org/files/2018/02/odbl-10.txt)  
