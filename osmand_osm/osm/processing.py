@@ -187,6 +187,8 @@ def output_osm(working_area, id, db_name):
         try:
             logging.info('writing osm file for ' + source.path.as_posix())
             id = pg2osm(source, id, working_area, db_name)
+            # osmium sort runs everything in memory, may want to use osmosis instead
+            run('osmium sort --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
         except Exception as e:
             logging.error(e)
             removal_list.append(source)
@@ -243,8 +245,6 @@ def prep_for_qa(working_area):
     input: working_area object
     output: stats for last source ran, area extract and final file
     '''
-    # osmium sort runs everything in memory, may want to use osmosis instead
-    run('osmium sort --overwrite {0}/{1}.osm.pbf -o {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, encoding='utf8')
     # get data for last source ran
     try:
         stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
