@@ -17,7 +17,8 @@ import hashlib
 import logging
 import datetime
 # config options
-from config import db_name, id, oa_urls, slice_config, batches, Xmx, log_level
+from config import db_name, id, slice_config, batches, Xmx, log_level
+from secrets import oa_token
 
 # download https://download.geofabrik.de/index-v1.json prior to running
 def geofabrik_lookup(working_area):
@@ -75,14 +76,14 @@ class Source():
         self.path_osm = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
         self.table = path.as_posix().replace('/','_').replace('.vrt','')
 
-def update_oa(url):
+def update_oa(token):
     '''
     input: url
     action: downloads urls and unzips them overwriting previous files
     output: none
     '''
-    filename = Path(url).name
-    run(['curl', '-e', 'https://results.openaddresses.io', '-A', 'opensupermaps.com', '-o', filename, url])
+    filename = Path(oa_global.zip)
+    run(['curl', '-e', 'https://batch.openaddresses.io', '-A', 'opensupermaps.com', '-o', filename, '-H', 'Authorization: Bearer ' + token, 'https://batch.openaddresses.io/api/collections/1/data'])
     run(['unzip', '-o', filename])
 
 def pg2osm(source, id_start, working_area, db_name):
@@ -369,7 +370,7 @@ def update_run_all_build(args):
     with Pool(args.processes) as p:
         # OA regions don't correspond to states and download slowly, run before main flow
         if args.update_oa == True:
-            p.map(update_oa, oa_urls)
+            update_oa(oa_token)
         p.map(run_all, area_list)
     # build obfs
     logging.info('Builds started')

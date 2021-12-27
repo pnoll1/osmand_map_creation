@@ -2,9 +2,6 @@
 db_name = 'gis'
 # id to count down from for addresses added to each area
 id = 2**34
-# openaddresses urls to download address data from
-# other possible urls: https://data.openaddresses.io/openaddr-collected-us_northeast.zip https://data.openaddresses.io/openaddr-collected-us_midwest.zip https://data.openaddresses.io/openaddr-collected-us_south.zip https://data.openaddresses.io/openaddr-collected-us_west.zip https://www.countries-ofthe-world.com/countries-of-north-america.html https://data.openaddresses.io/openaddr-collected-europe.zip https://data.openaddresses.io/openaddr-collected-asia.zip https://data.openaddresses.io/openaddr-collected-south_america.zip
-oa_urls = ['https://data.openaddresses.io/openaddr-collected-global.zip']
 # batch settings
 # list, each batch is a string
 batches = []
