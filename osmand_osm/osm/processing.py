@@ -73,13 +73,13 @@ class WorkingArea():
 class Source():
     def __init__(self, path):
         self.path = path
-        self.path_osm = Path(path.as_posix().replace('.vrt', '_addresses.osm'))
-        self.table = path.as_posix().replace('/','_').replace('.vrt','')
+        self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm'))
+        self.table = path.as_posix().replace('/','_').replace('.geojson','')
 
 def update_oa(token):
     '''
     input: url
-    action: downloads urls and unzips them overwriting previous files
+    action: downloads global oa zip and unzips it, overwriting previous files
     output: none
     '''
     filename = Path('oa_global.zip')
@@ -136,29 +136,29 @@ def pg2osm(source, id_start, working_area, db_name):
 def create_master_list(working_area):
     '''
     input: working_area object
-    action: updates working_area.master_list with paths of vrt files for working area
+    action: updates working_area.master_list with paths of oa files for working area
     output: none
     '''
+    filename = Path('')
+    def add_to_master_list(filename):
+        # gets only OA address files
+        if '-addresses-' in filename.name:
+            # - is not allowed in postgres
+            filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
+            os.rename(filename, filename_new)
+            file_list.append(Source(filename_new))
+        
     file_list = [] 
     for i in working_area.directory.iterdir():
+        # handle iso3166-1 (country)
         if i.is_dir(): 
             for filename in i.iterdir():
-                # - is not allowed in postgres
-                if '-' in filename.name and filename.suffix == '.vrt':
-                    filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
-                    os.rename(filename, filename_new)
-                    file_list.append(Source(filename_new))
-                elif filename.suffix == '.vrt':
-                    file_list.append(Source(filename))
+                add_to_master_list(filename)
         else:    
-            # - is not allowed in postgres
-            if '-' in i.name and i.suffix == '.vrt':
-                filename_new = i.parent.joinpath(Path(i.name.replace('-', '_')))
-                os.rename(i, filename_new)
-                file_list.append(Source(filename_new))
-            elif i.suffix == '.vrt':
-                file_list.append(Source(i))
+            # handle iso3166-2 (country and subdivision)
+            add_to_master_list(i) 
     working_area.master_list = file_list
+    logging.debug(working_area.master_list)
     logging.info(working_area.name + ' ' + 'Master List Created')
     return
 
@@ -166,11 +166,14 @@ def create_master_list(working_area):
 def load_oa(working_area, db_name):
     '''
     input: working_area object
-    action: loads oa csv into postgres+postgis db  
+    action: loads oa into postgres+postgis db  
     output: none
     '''
     for source in working_area.master_list:
-        run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, encoding='utf8')
+        try:
+            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, encoding='utf8')
+        except Exception as e:
+            logging.error(e)
     logging.info(working_area.name + ' ' + 'Load Finished')
     return
 
