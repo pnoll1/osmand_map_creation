@@ -4,7 +4,7 @@ db_name = 'gis'
 id = 2**34
 # batch settings
 # list, each batch is a string
-batches = []
+batches = ['']
 # slice configs
 # dict entry with value that is list of slices. Each slice is a list with the first entry being the name as a string and second being bounding box coordinates in lon,lat,lon,lat as a string
 # file must be sorted for osmium extract to work; running --quality-check handles this

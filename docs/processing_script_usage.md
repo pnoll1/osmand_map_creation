@@ -1,10 +1,11 @@
 # Linux Install
-Edit setup.sh, if not using defaults
-Run setup.sh
+Edit setup.sh, if not using defaults  
+Run setup.sh  
+Copy config.template to config.py
 Edit config.py if not using defaults
 
 # Script Usage
-Configuration is done in config.py, processing.py contains the code. The script can be run from the command line or using batches from config.py. Each argument targets an iso3166-2(us:wa) or iso3166-1-alpha2(us) area except for update-oa which targets all urls in oa_urls(several GBs worth of data). Update-oa takes a long time so you may want to run it separately or download the files yourself if only building areas in one region. You must have OA data and a OSM area extract for the script to work properly.
+Configuration is done in config.py, processing.py contains the code. The script can be run from the command line or using batches from config.py. Each argument targets an iso3166-2(us:wa) or iso3166-1-alpha2(us) area except for update-oa which downloads the global zip file(several GBs worth of data). Update-oa takes a long time so you may want to run it separately or download the files yourself if only building areas in one region. A key from OpenAddresses is required to download data through their API. You must have OA data and a OSM area extract for the script to work properly.
 
 cli usage is best for testing or one off builds: 
 - ./processing.py --all us:wa
