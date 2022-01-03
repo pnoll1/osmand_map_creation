@@ -67,6 +67,7 @@ class WorkingArea():
             self.is_3166_2 = False
         self.master_list = None
         self.obf_name = self.name_underscore.capitalize() + '.obf'
+
     def __string__(self):
         return str(self.short_name)
 
@@ -143,9 +144,9 @@ def create_master_list(working_area):
     filename = Path('')
     def add_to_master_list(filename):
         # gets only OA address files
-        if '-addresses-' in filename.name:
+        if '-addresses-' in filename.name and filename.suffix == '.geojson':
             file_list.append(Source(filename))
-        
+
     file_list = [] 
     for i in working_area.directory.iterdir():
         # handle iso3166-1 (country)
