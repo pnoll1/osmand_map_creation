@@ -74,7 +74,8 @@ class Source():
     def __init__(self, path):
         self.path = path
         self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm'))
-        self.table = path.as_posix().replace('/','_').replace('.geojson','')
+        # - is not allowed in postgres
+        self.table = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','')
 
 def update_oa(token):
     '''
@@ -143,10 +144,7 @@ def create_master_list(working_area):
     def add_to_master_list(filename):
         # gets only OA address files
         if '-addresses-' in filename.name:
-            # - is not allowed in postgres
-            filename_new = filename.parent.joinpath(Path(filename.name.replace('-', '_')))
-            os.rename(filename, filename_new)
-            file_list.append(Source(filename_new))
+            file_list.append(Source(filename))
         
     file_list = [] 
     for i in working_area.directory.iterdir():
@@ -171,7 +169,7 @@ def load_oa(working_area, db_name):
     '''
     for source in working_area.master_list:
         try:
-            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, encoding='utf8')
+            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
             logging.error(e)
     logging.info(working_area.name + ' ' + 'Load Finished')
