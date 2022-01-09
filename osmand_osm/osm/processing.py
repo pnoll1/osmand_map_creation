@@ -71,12 +71,21 @@ class WorkingArea():
     def __string__(self):
         return str(self.short_name)
 
+    def __repr__(self):
+        return 'WorkingArea(' + self.name + ')'
+
 class Source():
     def __init__(self, path):
         self.path = path
         self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm'))
         # - is not allowed in postgres
         self.table = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','')
+
+    def __string__(self):
+        return str(self.path)
+
+    def __repr__(self):
+        return 'Source(' + str(self.path) + ')'
 
 def update_oa(token):
     '''
@@ -386,6 +395,7 @@ def run_all(area):
     root = Path(os.getcwd())
     pbf_output = root.parent
     working_area = WorkingArea(area)
+    logging.debug(working_area)
     create_master_list(working_area)
     if args.load_oa == True:
         load_oa(working_area, db_name)
