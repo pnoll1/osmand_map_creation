@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<batch_process>
+	<process_attributes mapZooms="" renderingTypesFile="" zoomWaySmoothness=""
+		osmDbDialect="sqlite" mapDbDialect="sqlite"/>
+	<process directory_for_osm_files="/home/pat/projects/osmand_map_creation/osmand_osm/" 
+    directory_for_index_files="/home/pat/projects/osmand_map_creation/osmand_obf/" 
+    directory_for_generation="/home/pat/projects/osmand_map_creation/osmand_gen/"
+    directory_for_srtm_files="/home/pat/projects/osmand_map_creation/terrain/"
+    indexPOI="true" indexRouting="true" indexMap="true" indexTransport="true" indexAddress="true"/>
+</batch_process>
