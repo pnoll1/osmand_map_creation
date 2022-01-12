@@ -93,9 +93,8 @@ def update_oa(token):
     action: downloads global oa zip and unzips it, overwriting previous files
     output: none
     '''
-    filename = Path('oa_global.zip')
-    run(['curl', '-e', 'https://batch.openaddresses.io', '-A', 'opensupermaps.com', '-L', '-o', filename, '-H', 'Authorization: Bearer ' + token, 'https://batch.openaddresses.io/api/collections/1/data'])
-    run(['unzip', '-o', filename])
+    run(['wget', '--backups=1', '--header', 'Authorization: Bearer ' + token, 'https://batch.openaddresses.io/api/collections/1/data'])
+    run(['unzip', '-o', 'data'])
 
 def pg2osm(source, id_start, working_area, db_name):
     '''

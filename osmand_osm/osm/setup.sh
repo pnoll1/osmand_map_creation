@@ -6,7 +6,7 @@
 # Run in top level of project
 install_dir=$PWD
 # Install ogr2ogr, osmium, postgresql, postgis, ogr2osm globally via pip
-sudo apt-get install curl osmium-tool postgresql postgis gdal-bin python3-gdal python3-lxml
+sudo apt-get install curl osmium-tool postgresql postgis gdal-bin python3-gdal python3-lxml wget
 sudo pip3 install --system ogr2osm
 # Download OsmAnd Map Creator
 wget http://download.osmand.net/latest-night-build/OsmAndMapCreator-main.zip
