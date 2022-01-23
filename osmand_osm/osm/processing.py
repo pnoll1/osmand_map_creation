@@ -357,6 +357,7 @@ def parse_meta_commands():
         args.merge = True
         args.quality_check = True
         args.slice = True
+        args.build = True
     if args.normal:
         args.update_osm = True
         args.load_oa = True
@@ -365,6 +366,7 @@ def parse_meta_commands():
         args.merge = True
         args.quality_check = True
         args.slice = True
+        args.build = True
 
 def clean_file_names():
     for file in Path('../../osmand_obf').iterdir():
@@ -383,10 +385,11 @@ def update_run_all_build(args):
             update_oa(oa_token)
         p.map(run_all, area_list)
     # build obfs
-    logging.info('Builds started')
-    run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
-    # move files out of build folder
-    run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
+    if args.build:
+        logging.info('Builds started')
+        run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
+        # move files out of build folder
+        run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
 
 # main program flow
 def run_all(area):
@@ -445,6 +448,7 @@ if __name__ == '__main__':
     parser.add_argument('--update-osm', action='store_true', help='downloads latest area extract, overwrites previous')
     parser.add_argument('--quality-check', action='store_true', help='sort output file and run basic quality checks')
     parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
+    parser.add_argument('--build', action='store_true', help='runs osmand map creator')
     parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
     parser.add_argument('--all', action='store_true', help='use all options')
     if len(batches) == 0:
