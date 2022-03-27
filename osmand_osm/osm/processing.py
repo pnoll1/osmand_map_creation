@@ -109,11 +109,12 @@ def pg2osm(source, id_start, working_area, db_name):
         try:
             run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}"  --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field, db_name), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
-            logging.error('ogr2osm failure: ' + e)
+            logging.exception('ogr2osm failure ')
             raise
             return id_start
         # handle files with hashes only
         stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, encoding='utf8')
+        logging.debug(stats)
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
         except Exception:                
@@ -124,7 +125,7 @@ def pg2osm(source, id_start, working_area, db_name):
         try:
             run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field, db_name), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
-            logging.error('ogr2osm failure: ' + e)
+            logging.exception('ogr2osm failure ')
             raise
             return id_start 
         # handle files with hashes only
