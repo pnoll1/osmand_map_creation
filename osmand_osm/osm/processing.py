@@ -102,6 +102,19 @@ def pg2osm(source, id_start, working_area, db_name):
     action: creates osm format file excluding rows with empty or 0 number fields from postgres db
     output: finishing id if successfull, input id if failed
     '''
+    def oa_quality_check(source):
+        try:
+            stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
+        except Exception as e:
+            logging.error('pg2osm fileinfo failure: ' + e.stderr)
+        # handle files with hashes only
+        try:
+            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+        except Exception as e:                
+            logging.info('Error finding id_end in {0}. File is likely hashes only'.format(source.table))
+            raise
+            return id_start
+
     number_field = 'number'
     # find type of number field
     r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
@@ -112,15 +125,7 @@ def pg2osm(source, id_start, working_area, db_name):
             logging.exception('ogr2osm failure ')
             raise
             return id_start
-        # handle files with hashes only
-        stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, encoding='utf8')
-        logging.debug(stats)
-        try:
-            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
-        except Exception:                
-            logging.info('{0} is hashes only'.format(source.table))
-            raise
-            return id_start
+        oa_quality_check(source)
     elif 'integer' in r or 'numeric' in r:
         try:
             run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field, db_name), shell=True, capture_output=True, check=True, encoding='utf8')
@@ -128,14 +133,7 @@ def pg2osm(source, id_start, working_area, db_name):
             logging.exception('ogr2osm failure ')
             raise
             return id_start 
-        # handle files with hashes only
-        stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, encoding='utf8')
-        try:
-            id_end = json.loads(stats.stdout)['data']['minid']['nodes']
-        except Exception:                
-            logging.info('{0} is hashes only'.format(source.table))
-            raise
-            return id_start
+        oa_quality_check(source)
     # handle empty file
     else:
         logging.warning('{0} is empty'.format(source.table))
