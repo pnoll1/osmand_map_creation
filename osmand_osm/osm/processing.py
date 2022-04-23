@@ -110,6 +110,7 @@ def pg2osm(source, id_start, working_area, db_name):
         # handle files with hashes only
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
+            return id_end
         except Exception as e:                
             logging.info('Error finding id_end in {0}. File is likely hashes only'.format(source.table))
             raise
@@ -125,7 +126,7 @@ def pg2osm(source, id_start, working_area, db_name):
             logging.exception('ogr2osm failure ')
             raise
             return id_start
-        oa_quality_check(source)
+        id_end = oa_quality_check(source)
     elif 'integer' in r or 'numeric' in r:
         try:
             run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field, db_name), shell=True, capture_output=True, check=True, encoding='utf8')
@@ -133,7 +134,7 @@ def pg2osm(source, id_start, working_area, db_name):
             logging.exception('ogr2osm failure ')
             raise
             return id_start 
-        oa_quality_check(source)
+        id_end = oa_quality_check(source)
     # handle empty file
     else:
         logging.warning('{0} is empty'.format(source.table))
