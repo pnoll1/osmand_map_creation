@@ -37,5 +37,5 @@ OpenAddresses provides data downloads at https://batch.openaddresses.io/
 OA data is loaded into Postgresql, filtered with sql, exported to osm xml format and merged with OSM area extracts while converting to osm.pbf. See docs/processing_script_usage and processing.py file.
 
 # License
-Map Files:[ODBL 1.0](https://opendatacommons.org/files/2018/02/odbl-10.txt)  
+Map Files:[ODBL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)  
 Code: GPLv3
