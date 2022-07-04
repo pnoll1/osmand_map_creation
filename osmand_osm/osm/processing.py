@@ -260,20 +260,23 @@ def prep_for_qa(working_area):
     try:
         stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error(e.stderr)
+        logging.error(e)
         ready_to_move=False
+        raise
     # get data for OSM extract
     try:
         stats_area = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error(e.stderr)
+        logging.error(e)
         ready_to_move=False
+        raise
     # get data for completed state file
     try:
         stats_final = run('osmium fileinfo -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error(e.stderr)
+        logging.error(e)
         ready_to_move=False
+        raise
     return stats, stats_area, stats_final
 
 def quality_check(stats, stats_area, stats_final, ready_to_move):
@@ -347,7 +350,7 @@ def slice(working_area, config):
         sliced_state = config[working_area.name]
         return sliced_state
 
-def parse_meta_commands():
+def parse_meta_commands(args):
     if args.all:
         args.update_oa = True
         args.update_osm = True
@@ -377,13 +380,16 @@ def clean_file_names():
             os.replace(file, new_file_path)
     
 
-def update_run_all_build(args): 
+def update_run_all_build(args, area_list): 
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
     with Pool(args.processes) as p:
         # OA regions don't correspond to states and download slowly, run before main flow
         if args.update_oa == True:
             update_oa(oa_token)
-        p.map(run_all, area_list)
+        area_list_of_tuples = []
+        for i in area_list:
+            area_list_of_tuples.append((i,args))
+        p.starmap(run_all, area_list_of_tuples)
     # build obfs
     if args.build:
         logging.info('Builds started')
@@ -392,7 +398,7 @@ def update_run_all_build(args):
         run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
 
 # main program flow
-def run_all(area):
+def run_all(area, args):
     # root assumed to be child folder of pbf_output
     root = Path(os.getcwd())
     pbf_output = root.parent
@@ -433,12 +439,11 @@ def run_all(area):
         move(working_area, ready_to_move, pbf_output) 
         logging.info('pbf files moved to build folder for ' + working_area.name)
 
-if __name__ == '__main__':
-    log_level = getattr(logging, log_level.upper())
-    logging.basicConfig(filename='processing_{0}.log'.format(datetime.datetime.today().isoformat()), level=log_level, format='%(asctime)s %(message)s')
+def main(args=None):
+    logging.basicConfig(filename='processing_{0}.log'.format(datetime.datetime.today().isoformat()), level=log_level.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
     # commandline argument setup
     parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
-    parser.add_argument('area-list', nargs='*', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
+    parser.add_argument('area_list', nargs='*', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
     parser.add_argument('--normal', action='store_true', help='probably what you want, runs all but --update-oa')
     parser.add_argument('--update-oa', action='store_true', help='downloads OA data in oa_urls variable')
     parser.add_argument('--load-oa', action='store_true', help='loads OA data into database, overwriting previous')
@@ -452,10 +457,12 @@ if __name__ == '__main__':
     parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
     parser.add_argument('--all', action='store_true', help='use all options')
     if len(batches) == 0:
-        args = parser.parse_args()
-        parse_meta_commands()
-        area_list = vars(args)['area-list']  
-        update_run_all_build(args)
+        # allows calling from module
+        if not args:
+            args = parser.parse_args()
+        parse_meta_commands(args)
+        area_list = vars(args)['area_list']  
+        update_run_all_build(args, area_list)
     # use commands from config file if present
     if len(batches) > 0:
         for i in batches:
@@ -464,7 +471,7 @@ if __name__ == '__main__':
             parse_meta_commands()
             logging.debug(args)
             area_list = vars(args)['area-list']
-            update_run_all_build(args)
+            update_run_all_build(args, area_list)
             logging.info('obfs build stage finished for ' + i)
     clean_file_names()
     # calculate file hashs
@@ -477,3 +484,6 @@ if __name__ == '__main__':
                 with open(file.with_suffix('.sha256'),'w') as sha256_file:
                     sha256_file.write(sha256 + ' ' + file.name)
     logging.info('script finished')
+
+if __name__ == '__main__':
+    main()
