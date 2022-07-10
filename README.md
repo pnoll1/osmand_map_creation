@@ -36,6 +36,16 @@ OpenAddresses provides data downloads at https://batch.openaddresses.io/
 ## Processing.py
 OA data is loaded into Postgresql, filtered with sql, exported to osm xml format and merged with OSM area extracts while converting to osm.pbf. See docs/processing_script_usage and processing.py file.
 
+# Contributing
+## Code
+Contributors welcome! It's recommended to open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the idea first.
+
+## Building a new area
+If there's an area you want added, please open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the area request label. Any area that has OpenAddresses coverage is welcome.
+
+## Other
+Open an [issue](https://github.com/pnoll1/osmand_map_creation/issues).
+
 # License
 Map Files:[ODBL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)  
 Code: GPLv3
