@@ -12,7 +12,6 @@ from subprocess import run, CalledProcessError
 from pathlib import Path
 import argparse
 from multiprocessing import Pool
-from pathlib import Path
 import hashlib
 import logging
 import datetime
@@ -47,7 +46,6 @@ def geofabrik_lookup(working_area):
     # could not find matching area
     url = None
     return url
-     
 
 class WorkingArea():
     def __init__(self, name):
@@ -155,15 +153,15 @@ def create_master_list(working_area):
         if '-addresses-' in filename.name and filename.suffix == '.geojson':
             file_list.append(Source(filename))
 
-    file_list = [] 
+    file_list = []
     for i in working_area.directory.iterdir():
         # handle iso3166-1 (country)
-        if i.is_dir(): 
+        if i.is_dir():
             for filename in i.iterdir():
                 add_to_master_list(filename)
-        else:    
+        else:
             # handle iso3166-2 (country and subdivision)
-            add_to_master_list(i) 
+            add_to_master_list(i)
     working_area.master_list = file_list
     logging.debug(working_area.master_list)
     logging.info(working_area.name + ' ' + 'Master List Created')
@@ -173,7 +171,7 @@ def create_master_list(working_area):
 def load_oa(working_area, db_name):
     '''
     input: working_area object
-    action: loads oa into postgres+postgis db  
+    action: loads oa into postgres+postgis db
     output: none
     '''
     for source in working_area.master_list:
@@ -227,9 +225,7 @@ def update_osm(working_area, url):
         run('echo {0} {1}/{2}-latest.osm.pbf.md5 | md5sum -c'.format(md5, working_area.directory, working_area.short_name), shell=True, capture_output=True, encoding='utf8')
     except Exception as e:
         logging.error('md5 check failed for ' + working_area.name)
-        raise e
-    return
-
+        raise e 
 
 def merge(working_area):
     '''
@@ -377,8 +373,7 @@ def clean_file_names():
             directory = file.parent
             new_filename = file.name.replace('_2','')
             new_file_path = directory.joinpath(Path(new_filename))
-            os.replace(file, new_file_path)
-    
+            os.replace(file, new_file_path) 
 
 def update_run_all_build(args, area_list): 
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
@@ -433,10 +428,10 @@ def run_all(area, args):
         sliced_area = slice(working_area, slice_config)
         logging.info('slice finished for ' + working_area.name)
     if args.output_osm and args.slice:
-        move(working_area, ready_to_move, pbf_output, sliced_area) 
+        move(working_area, ready_to_move, pbf_output, sliced_area)
         logging.info('pbf files moved to build folder for ' + working_area.name)
     elif args.output_osm:
-        move(working_area, ready_to_move, pbf_output) 
+        move(working_area, ready_to_move, pbf_output)
         logging.info('pbf files moved to build folder for ' + working_area.name)
 
 def main(args=None):
@@ -461,7 +456,7 @@ def main(args=None):
         if not args:
             args = parser.parse_args()
         parse_meta_commands(args)
-        area_list = vars(args)['area_list']  
+        area_list = vars(args)['area_list']
         update_run_all_build(args, area_list)
     # use commands from config file if present
     if len(batches) > 0:
