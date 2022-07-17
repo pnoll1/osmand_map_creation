@@ -383,7 +383,7 @@ def update_run_all_build(args, area_list):
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
     with Pool(args.processes) as p:
         # OA regions don't correspond to states and download slowly, run before main flow
-        if args.update_oa == True:
+        if args.update_oa:
             update_oa(oa_token)
         area_list_of_tuples = []
         for i in area_list:
@@ -406,15 +406,15 @@ def run_all(area, args):
     working_area = WorkingArea(area)
     logging.debug(working_area)
     create_master_list(working_area)
-    if args.load_oa == True:
+    if args.load_oa:
         load_oa(working_area, db_name)
     if args.filter_data:
         filter_data(working_area, db_name)
     if args.output_osm:
         output_osm(working_area, id, db_name)
-    if args.update_osm == True:
+    if args.update_osm:
         url = geofabrik_lookup(working_area)
-        if url == None:
+        if url is None:
             logging.error('could not find geofabrik url for ' + working_area.name)
             raise ValueError
         try:
