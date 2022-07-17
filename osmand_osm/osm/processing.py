@@ -112,7 +112,6 @@ def pg2osm(source, id_start, working_area, db_name):
         except Exception as e:                
             logging.info('Error finding id_end in {0}. File is likely hashes only'.format(source.table))
             raise
-            return id_start
 
     number_field = 'number'
     # find type of number field
@@ -123,7 +122,6 @@ def pg2osm(source, id_start, working_area, db_name):
         except Exception as e:
             logging.exception('ogr2osm failure ')
             raise
-            return id_start
         id_end = oa_quality_check(source)
     elif 'integer' in r or 'numeric' in r:
         try:
@@ -131,15 +129,12 @@ def pg2osm(source, id_start, working_area, db_name):
         except Exception as e:
             logging.exception('ogr2osm failure ')
             raise
-            return id_start 
         id_end = oa_quality_check(source)
     # handle empty file
     else:
         logging.warning('{0} is empty'.format(source.table))
-        raise
         return id_start
     return id_end
-
 
 def create_master_list(working_area):
     '''
@@ -165,8 +160,6 @@ def create_master_list(working_area):
     working_area.master_list = file_list
     logging.debug(working_area.master_list)
     logging.info(working_area.name + ' ' + 'Master List Created')
-    return
-
 
 def load_oa(working_area, db_name):
     '''
@@ -180,8 +173,6 @@ def load_oa(working_area, db_name):
         except Exception as e:
             logging.error(e)
     logging.info(working_area.name + ' ' + 'Load Finished')
-    return
-
 
 def output_osm(working_area, id, db_name):
     '''
@@ -204,8 +195,6 @@ def output_osm(working_area, id, db_name):
     # remove file from file list so merge will work
     for source in removal_list:
         working_area.master_list.remove(source)
-    return
-
 
 def update_osm(working_area, url):
     '''
