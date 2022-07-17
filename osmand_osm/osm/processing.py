@@ -48,6 +48,9 @@ def geofabrik_lookup(working_area):
     return url
 
 class WorkingArea():
+    '''
+    Holds all info for current geographic area being built
+    '''
     def __init__(self, name):
         self.name = name
         self.name_underscore = self.name.replace(':', '_')
@@ -73,6 +76,9 @@ class WorkingArea():
         return 'WorkingArea(' + self.name + ')'
 
 class Source():
+    '''
+    holds locations for OA source data at any point during processing
+    '''
     def __init__(self, path):
         self.path = path
         self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm'))
@@ -336,6 +342,9 @@ def slice(working_area, config):
         return sliced_state
 
 def parse_meta_commands(args):
+    '''
+    expands meta commands into lower level commands
+    '''
     if args.all:
         args.update_oa = True
         args.update_osm = True
@@ -357,6 +366,9 @@ def parse_meta_commands(args):
         args.build = True
 
 def clean_file_names():
+    '''
+    remove filename cruft added by osmand map creator
+    '''
     for file in Path('../../osmand_obf').iterdir():
         if '_2' in file.name:
             directory = file.parent
@@ -364,7 +376,10 @@ def clean_file_names():
             new_file_path = directory.joinpath(Path(new_filename))
             os.replace(file, new_file_path) 
 
-def update_run_all_build(args, area_list): 
+def update_run_all_build(args, area_list):
+    '''
+    splits areas up for multiprocessing then builds using osmand map creator
+    '''
     # Ram can be limit with large files, consider switching pool to 1 or doing 1 state at a time with cron job
     with Pool(args.processes) as p:
         # OA regions don't correspond to states and download slowly, run before main flow
@@ -381,8 +396,10 @@ def update_run_all_build(args, area_list):
         # move files out of build folder
         run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
 
-# main program flow
 def run_all(area, args):
+    '''
+    runs processing code for single geographic area
+    '''
     # root assumed to be child folder of pbf_output
     root = Path(os.getcwd())
     pbf_output = root.parent
@@ -424,6 +441,11 @@ def run_all(area, args):
         logging.info('pbf files moved to build folder for ' + working_area.name)
 
 def main(args=None):
+    '''
+    top level function that sets up logging and cli parser then determines if cli or config file
+    driven and sends areas to other function for processing. When done, file names are cleaned and
+    checksums created
+    '''
     logging.basicConfig(filename='processing_{0}.log'.format(datetime.datetime.today().isoformat()), level=log_level.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
     # commandline argument setup
     parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
