@@ -474,9 +474,9 @@ def main(args=None):
         for i in batches:
             j = i.split(' ')
             args = parser.parse_args(j)
-            parse_meta_commands()
+            parse_meta_commands(args)
             logging.debug(args)
-            area_list = vars(args)['area-list']
+            area_list = vars(args)['area_list']
             update_run_all_build(args, area_list)
             logging.info('obfs build stage finished for ' + i)
     clean_file_names()
