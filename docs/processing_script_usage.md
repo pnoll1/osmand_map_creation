@@ -22,10 +22,10 @@ Add sql statements to --sql flag in ogr2osm calls to filter data without removin
 # Troubleshooting builds
 If builds fail, try increasing Xmx. If that doesn't work, add a slice_config to break the area into smaller pieces. Log files from osmand_map_creator are in the osmand_obf folder with the obf.gen.log suffix. 
 
+If data doesn't show up in finished builds check processing.py logs in osm folder. This often means unicode control characters were still in the source data after filtering. Processing.py stops processing a source once it hits a unicode control character.
+
 # Testing
 Project uses unittest for testing. In the osm directory, run python3 -m unittest tests.py to run tests.
-
-If data doesn't show up in finished builds check processing.py logs in osm folder. This often means unicode control characters were still in the source data after filtering. Processing.py stops processing a source once it hits a unicode control character.
 
 # Limitations
 Command line arguments are only used if batches is an empty list.  
