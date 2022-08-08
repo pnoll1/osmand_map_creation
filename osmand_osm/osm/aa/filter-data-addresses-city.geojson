@@ -1,0 +1,3 @@
+{"type":"Feature","properties":{"id":"","unit":"","number":"1","street":"Di Mario Dr","city":"","district":"","region":"","postcode":"02904","hash":"908f551defc1295a"},"geometry":{"type":"Point","coordinates":[-71.4188401,41.8572897]}}
+{"type":"Feature","properties":{"hash":"59a2672f7f81bc31","number":"SN","street":"CALLE EMILIO GARCÍA","unit":"","city":"ARELLANO","district":"Aguascalientes","region":"Aguascalientes","postcode":"","id":"0100101061763020-5"},"geometry":{"type":"Point","coordinates":[-102.2759162,21.8011834]}}
+{"type":"Feature","properties":{"id":"","unit":"","number":"--","street":"Linwood Ave","city":"","district":"","region":"","postcode":"02907","hash":"e1262d57e0077c2e"},"geometry":{"type":"Point","coordinates":[-71.4373704,41.8076377]}}
