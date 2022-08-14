@@ -175,7 +175,7 @@ def load_oa(working_area, db_name):
     '''
     for source in working_area.master_list:
         try:
-            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
+            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES -skipfailures'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
             logging.error(e)
     logging.info(working_area.name + ' ' + 'Load Finished')
@@ -313,11 +313,6 @@ def filter_data(working_area, db_name):
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for -- ' + r.stdout)
-        # print('Removed -- from {0}_{1}'.format(name, state))
-        # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for illegal xml ' + r.stdout)
-        # print('Removed illegal unicode from {0}_{1}'.format(name, state))
         # delete records where number=SN eg MX countrywide
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1}='SN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for SN ' + r.stdout)
