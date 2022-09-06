@@ -120,26 +120,13 @@ def pg2osm(source, id_start, working_area, db_name):
             raise
 
     number_field = 'number'
-    # find type of number field
-    r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
-    if 'character' in r:
-        try:
-            run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}"  --sql "select * from \\"{2}\\" where {3} is not null and {3}!=\'\' and {3}!=\'0\'"'.format(id_start, source.path_osm, source.table, number_field, db_name), shell=True, capture_output=True, check=True, encoding='utf8')
-        except Exception as e:
-            logging.exception('ogr2osm failure ')
-            raise
-        id_end = oa_quality_check(source)
-    elif 'integer' in r or 'numeric' in r:
-        try:
-            run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={4}" --sql "select * from \\"{2}\\" where {3} is not null and {3}!=0"'.format(id_start, source.path_osm, source.table, number_field, db_name), shell=True, capture_output=True, check=True, encoding='utf8')
-        except Exception as e:
-            logging.exception('ogr2osm failure ')
-            raise
-        id_end = oa_quality_check(source)
+    try:
+        run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={2}"  --sql "select * from \\"{3}\\""'.format(id_start, source.path_osm, db_name, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
+    except Exception as e:
+        logging.exception('ogr2osm failure ')
+        raise
+    id_end = oa_quality_check(source)
     # handle empty file
-    else:
-        logging.warning('{0} is empty'.format(source.table))
-        return id_start
     return id_end
 
 def create_master_list(working_area):
@@ -310,6 +297,20 @@ def filter_data(working_area, db_name):
     number_field = 'number'
     for source in working_area.master_list:
         logging.info('filtering {0}'.format(source.table))
+        # find type of number field
+        r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
+        # delete records with no or bad number field data
+        if 'character' in r:
+            r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
+            logging.info('looking for empty or null ' + r.stdout)
+        elif 'integer' in r or 'numeric' in r:
+            r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table, number_field)], capture_output=True, encoding='utf8')
+            logging.info('looking for empty or null ' + r.stdout)
+        else:
+            logging.error('Number field in {0} is not character, integer or numeric'.format(source.table)) 
+        # delete records with 0 as number
+        r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
+        logging.info('looking for 0 ' + r.stdout)
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for -- ' + r.stdout)
