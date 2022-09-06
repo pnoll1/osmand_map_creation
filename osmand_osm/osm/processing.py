@@ -126,7 +126,6 @@ def pg2osm(source, id_start, working_area, db_name):
         logging.exception('ogr2osm failure ')
         raise
     id_end = oa_quality_check(source)
-    # handle empty file
     return id_end
 
 def create_master_list(working_area):
@@ -303,20 +302,23 @@ def filter_data(working_area, db_name):
         if 'character' in r:
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
             logging.info('looking for empty or null ' + r.stdout)
+            # us_wa_snohomish county
+            r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
+            logging.info('looking for UNKNOWN ' + r.stdout) 
         elif 'integer' in r or 'numeric' in r:
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table, number_field)], capture_output=True, encoding='utf8')
             logging.info('looking for empty or null ' + r.stdout)
         else:
             logging.error('Number field in {0} is not character, integer or numeric'.format(source.table)) 
-        # delete records with 0 as number
-        r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for 0 ' + r.stdout)
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for -- ' + r.stdout)
         # delete records where number=SN eg MX countrywide
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1}='SN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for SN ' + r.stdout)
+        # delete records without geometry
+        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where wkb_geometry is null".format(source.table)], capture_output=True, encoding='utf8')
+        logging.info('looking for missing geometry ' + r.stdout)       
 
 def slice(working_area, config):
     '''
