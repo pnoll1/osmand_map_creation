@@ -110,7 +110,7 @@ def pg2osm(source, id_start, working_area, db_name):
         try:
             stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
-            logging.error('pg2osm fileinfo failure: ' + e.stderr)
+            logging.error('pg2osm fileinfo failure in {0}: '.format(source.table) + e.stderr)
         # handle files with hashes only
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
@@ -123,7 +123,7 @@ def pg2osm(source, id_start, working_area, db_name):
     try:
         run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={2}"  --sql "select * from \\"{3}\\""'.format(id_start, source.path_osm, db_name, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
-        logging.exception('ogr2osm failure ')
+        logging.exception('ogr2osm failure in ' + source.table)
         raise
     id_end = oa_quality_check(source)
     return id_end
@@ -163,7 +163,7 @@ def load_oa(working_area, db_name):
         try:
             run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES -skipfailures'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
-            logging.error(e)
+            logging.error(working_area.name + ' ' + e)
     logging.info(working_area.name + ' ' + 'Load Finished')
 
 def output_osm(working_area, id, db_name):
@@ -182,7 +182,7 @@ def output_osm(working_area, id, db_name):
             # osmium sort runs everything in memory, may want to use osmosis instead
             run('osmium sort --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
         except Exception as e:
-            logging.error(e)
+            logging.error(source.path.as_posix() + ' ' + e)
             removal_list.append(source)
     # remove file from file list so merge will work
     for source in removal_list:
@@ -222,10 +222,10 @@ def merge(working_area):
     try:
         run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
-        logging.error(e.stderr)
-        logging.error(working_area.name + ' ' + 'Merge Failed')
+        logging.error(working_area.name + ' ' + e.stderr)
+        logging.error(working_area.name + ' Merge Failed')
         return
-    logging.info(working_area.name + ' ' + 'Merge Finished')
+    logging.info(working_area.name + ' Merge Finished')
     return
 
 def prep_for_qa(working_area):
@@ -237,26 +237,26 @@ def prep_for_qa(working_area):
     try:
         stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error(e)
+        logging.error('fileinfo error for last source ran: ' + working_area.master_list[-1].path_osm + ' ' + e)
         ready_to_move=False
         raise
     # get data for OSM extract
     try:
         stats_area = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error(e)
+        logging.error('fileinfo error in osm extract: ' + working_area.short_name + ' ' + e)
         ready_to_move=False
         raise
     # get data for completed state file
     try:
         stats_final = run('osmium fileinfo -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error(e)
+        logging.error('fileinfo error in completed file: ' + working_area.name_underscore + ' ' + e)
         ready_to_move=False
         raise
     return stats, stats_area, stats_final
 
-def quality_check(stats, stats_area, stats_final, ready_to_move):
+def quality_check(stats, stats_area, stats_final, ready_to_move, working_area):
     '''
     input: stats for last source ran, state extract, final file and ready_to_move boolean
     output: boolean that is True for no issues or False for issues
@@ -264,11 +264,11 @@ def quality_check(stats, stats_area, stats_final, ready_to_move):
     # file is not empty
     # Check if items have unique ids
     if json.loads(stats_final.stdout)['data']['multiple_versions'] == True:
-        logging.error('ERROR: Multiple items with same id')
+        logging.error('ERROR: Multiple items with same id ' + working_area.name)
         ready_to_move = False
     # Check if added data overlaps with OSM ids
     if json.loads(stats_area.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
-        logging.error('ERROR: Added data overlaps with OSM data')
+        logging.error('ERROR: Added data overlaps with OSM data ' + working_area.name)
         ready_to_move = False
     return ready_to_move
 
@@ -301,24 +301,24 @@ def filter_data(working_area, db_name):
         # delete records with no or bad number field data
         if 'character' in r:
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for empty or null ' + r.stdout)
+            logging.info('looking for empty or null in' + source.table + ' ' + r.stdout)
             # us_wa_snohomish county
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for UNKNOWN ' + r.stdout) 
+            logging.info('looking for UNKNOWN ' + source.table + ' ' + r.stdout)
         elif 'integer' in r or 'numeric' in r:
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for empty or null ' + r.stdout)
+            logging.info('looking for empty or null ' + source.table + ' ' + r.stdout)
         else:
-            logging.error('Number field in {0} is not character, integer or numeric'.format(source.table)) 
+            logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for -- ' + r.stdout)
+        logging.info('looking for -- ' + source.table + ' ' + r.stdout)
         # delete records where number=SN eg MX countrywide
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1}='SN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for SN ' + r.stdout)
+        logging.info('looking for SN ' + source.table + ' ' + r.stdout)
         # delete records without geometry
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where wkb_geometry is null".format(source.table)], capture_output=True, encoding='utf8')
-        logging.info('looking for missing geometry ' + r.stdout)       
+        logging.info('looking for missing geometry ' + source.table + ' ' + r.stdout)
 
 def slice(working_area, config):
     '''
@@ -329,13 +329,14 @@ def slice(working_area, config):
     '''
     if working_area.name in config.keys():
         for slice_config in config[working_area.name]:
+            logging.info('Slicing ' + working_area.name)
             # better as dict?
             slice_name = slice_config[0]
             bounding_box = slice_config[1]
             try:
                 run('osmium extract -O -b {3} -o {0}/{1}_{2}.osm.pbf {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
             except Exception as e:
-                logging.error(e.stderr)
+                logging.error(working.area.name + e.stderr)
         sliced_state = config[working_area.name]
         return sliced_state
 
@@ -426,7 +427,7 @@ def run_all(area, args):
     ready_to_move = True
     if args.quality_check:
         stats, stats_area, stats_final = prep_for_qa(working_area)
-        ready_to_move = quality_check(stats, stats_area, stats_final,ready_to_move)
+        ready_to_move = quality_check(stats, stats_area, stats_final,ready_to_move, working_area)
         logging.info('quality check finished for ' + working_area.name)
     if args.slice:
         sliced_area = slice(working_area, slice_config)
