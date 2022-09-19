@@ -3,6 +3,7 @@ from subprocess import run
 import types
 import logging
 import datetime
+from pathlib import Path
 import processing
 
 logging.basicConfig(filename='processing_test_{0}.log'.format(datetime.datetime.today().isoformat()), level='DEBUG', format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -33,7 +34,7 @@ class UnitTests(unittest.TestCase):
         run(['psql', '-d', 'gis', '-c', "drop table aa_load_oa_addresses_city"], capture_output=True)
         run('psql -d gis < $PWD/aa/load_oa_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
-        processing.create_master_list(working_area)
+        working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
         processing.load_oa(working_area, 'gis')
         r = run('psql -d gis --csv -c "select * from aa_load_oa_addresses_city"', shell=True, capture_output=True)
         # check for street
@@ -47,7 +48,7 @@ class UnitTests(unittest.TestCase):
         # load data into postgres
         run('psql -d gis < $PWD/aa/filter_data_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
-        processing.create_master_list(working_area)
+        working_area.master_list = [processing.Source(Path('aa/filter-data-addresses-city.geojson'))]
         processing.filter_data(working_area, 'gis')
         # check for --
         r = run(['psql', '-d', 'gis', '-c', "select * from aa_filter_data_addresses_city where number='--'"], capture_output=True)
@@ -65,7 +66,7 @@ class UnitTests(unittest.TestCase):
         # load data into postgres
         run('psql -d gis < $PWD/aa/output_osm_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
-        processing.create_master_list(working_area)
+        working_area.master_list = [processing.Source(Path('aa/output-osm-addresses-city.geojson'))]
         db_name = 'gis'
         id = 2**34
         processing.output_osm(working_area, id, db_name)
