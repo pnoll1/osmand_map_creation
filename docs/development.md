@@ -24,4 +24,4 @@ It's recommended to open an issue with the idea first. Start your own feature br
 Project uses unittest for testing. In the osm directory, run python3 -m unittest tests.py to run tests. The config file must have batches set to an empty list for tests to run.
 
 ## Unit Tests
-Test data is stored in aa and ab folders. Find a test case for your change and insert into corresponding geojson file. Use processing.py --load-oa aa(or ab depending on change) to load data into postgres. Use pg_dump > filename.sql to replace current sql file. Add your test to tests.py.
+Test data is stored in aa and ab folders. Find a test case for your change and insert into corresponding geojson file. Use processing.py --load-oa aa(or ab depending on change) to load data into postgres. Use pg_dump -d gis -t tablename > filename.sql to replace current sql file. Add your test to tests.py.

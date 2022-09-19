@@ -1,8 +1,0 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<osm version="0.6" generator="osmium/1.14.0">
-  <node id="17179869179" lat="41.8572897" lon="-71.4188401">
-    <tag k="addr:housenumber" v="1"/>
-    <tag k="addr:street" v="Di Mario Dr"/>
-    <tag k="addr:postcode" v="02904"/>
-  </node>
-</osm>

@@ -1,7 +1,11 @@
 import unittest
 from subprocess import run
 import types
+import logging
+import datetime
 import processing
+
+logging.basicConfig(filename='processing_test_{0}.log'.format(datetime.datetime.today().isoformat()), level='DEBUG', format='%(asctime)s %(name)s %(levelname)s %(message)s')
 
 # setup object to hold parser args
 args = types.SimpleNamespace()
@@ -66,7 +70,10 @@ class UnitTests(unittest.TestCase):
         id = 2**34
         processing.output_osm(working_area, id, db_name)
         with open('aa/output-osm-addresses-city_addresses.osm') as test_file:
-            self.assertRegex(test_file.read(), 'Di Mario Dr')
+            file_text = test_file.read()
+            self.assertRegex(file_text, 'Di Mario Dr')
+            # check that ogr2osm doesn't merge
+            self.assertRegex(file_text, '\"#A01 E CHERRY LN\"')
 
 class IntegrationTests(unittest.TestCase):
     '''
@@ -89,14 +96,7 @@ class IntegrationTests(unittest.TestCase):
 
     def test_failure(self):
         '''
-        IndexError thrown when function tries to access empty master list
-        us:pr's one source gets thrown out due to osmium errors
         '''
-        #with self.assertLogs(level='DEBUG') as log:
-            #processing.main(args)
-        #self.assertIn(['ERROR pg2osm fileinfo failure: OSM tag value is too long'], log.output)
-        with self.assertRaises(IndexError):
-            processing.main(args)
 
     def test_success(self):
         '''

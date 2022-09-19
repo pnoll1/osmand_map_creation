@@ -1,1 +1,3 @@
 {"type":"Feature","properties":{"id":"","unit":"","number":"1","street":"Di Mario Dr","city":"","district":"","region":"","postcode":"02904","hash":"908f551defc1295a"},"geometry":{"type":"Point","coordinates":[-71.4188401,41.8572897]}}
+{"type":"Feature","properties":{"id":"","unit":"","number":"500","street":"#A01 E CHERRY LN","city":"ELLENSBURG","district":"","region":"","postcode":"98926","hash":"2dcd70d0ba3021b8"},"geometry":{"type":"Point","coordinates":[-120.540328,46.9862581]}}
+{"type":"Feature","properties":{"id":"","unit":"","number":"500","street":"#A02 E CHERRY LN","city":"ELLENSBURG","district":"","region":"","postcode":"98926","hash":"bc0d5eb064e9d91a"},"geometry":{"type":"Point","coordinates":[-120.540328,46.9862581]}}

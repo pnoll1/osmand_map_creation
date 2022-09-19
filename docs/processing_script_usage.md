@@ -24,9 +24,6 @@ If builds fail, try increasing Xmx. If that doesn't work, add a slice_config to 
 
 If data doesn't show up in finished builds check processing.py logs in osm folder. This often means unicode control characters were still in the source data after filtering. Processing.py stops processing a source once it hits a unicode control character.
 
-# Testing
-Project uses unittest for testing. In the osm directory, run python3 -m unittest tests.py to run tests.
-
 # Limitations
 Command line arguments are only used if batches is an empty list.  
 Not all options are avaiable from cli and config file  

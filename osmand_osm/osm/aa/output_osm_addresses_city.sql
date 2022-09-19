@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.4 (Debian 14.4-1+b1)
--- Dumped by pg_dump version 14.4 (Debian 14.4-1+b1)
+-- Dumped from database version 14.5 (Debian 14.5-2)
+-- Dumped by pg_dump version 14.5 (Debian 14.5-2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -76,6 +76,8 @@ ALTER TABLE ONLY public.aa_output_osm_addresses_city ALTER COLUMN ogc_fid SET DE
 
 COPY public.aa_output_osm_addresses_city (ogc_fid, id, unit, number, street, city, district, region, postcode, hash, wkb_geometry) FROM stdin;
 1			1	Di Mario Dr				02904	908f551defc1295a	0101000020E610000037F0B446CEDA51C04D593CABBBED4440
+2			500	#A01 E CHERRY LN	ELLENSBURG			98926	2dcd70d0ba3021b8	0101000020E61000003D47E4BB94225EC0227596B43D7E4740
+3			500	#A02 E CHERRY LN	ELLENSBURG			98926	bc0d5eb064e9d91a	0101000020E61000003D47E4BB94225EC0227596B43D7E4740
 \.
 
 
@@ -83,7 +85,7 @@ COPY public.aa_output_osm_addresses_city (ogc_fid, id, unit, number, street, cit
 -- Name: aa_output_osm_addresses_city_ogc_fid_seq; Type: SEQUENCE SET; Schema: public; Owner: pat
 --
 
-SELECT pg_catalog.setval('public.aa_output_osm_addresses_city_ogc_fid_seq', 1, true);
+SELECT pg_catalog.setval('public.aa_output_osm_addresses_city_ogc_fid_seq', 3, true);
 
 
 --
