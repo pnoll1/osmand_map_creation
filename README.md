@@ -38,7 +38,7 @@ OA data is loaded into Postgresql, filtered with sql, exported to osm xml format
 
 # Contributing
 ## Code
-Contributors welcome! It's recommended to open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the idea first.
+Contributors welcome! It's recommended to open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the idea first. See docs/development.md.
 
 ## Building a new area
 If there's an area you want added, please open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the area request label. Any area that has OpenAddresses coverage is welcome.
