@@ -109,8 +109,8 @@ def pg2osm(source, id_start, working_area, db_name):
     def oa_quality_check(source):
         try:
             stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
-        except Exception as e:
-            logging.error('pg2osm fileinfo failure in {0}: '.format(source.table) + e.stderr)
+        except CalledProcessError as error:
+            logging.error('pg2osm fileinfo failure in {0}: '.format(source.table) + error.stderr)
         # handle files with hashes only
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
@@ -122,7 +122,7 @@ def pg2osm(source, id_start, working_area, db_name):
     number_field = 'number'
     try:
         run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={2}"  --sql "select * from \\"{3}\\""'.format(id_start, source.path_osm, db_name, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
-    except Exception as e:
+    except CalledProcessError as error:
         logging.exception('ogr2osm failure in ' + source.table)
         raise
     id_end = oa_quality_check(source)
@@ -159,9 +159,11 @@ def load_oa(working_area, db_name):
     action: loads oa into postgres+postgis db
     output: none
     '''
+    logging.info('Starting Load for: ' + working_area.name)
     for source in working_area.master_list:
+        logging.debug('Loading: ' + source.path.as_posix())
         try:
-            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES -skipfailures'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
+            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
             logging.error(working_area.name + ' ' + e)
     logging.info(working_area.name + ' ' + 'Load Finished')
@@ -181,9 +183,13 @@ def output_osm(working_area, id, db_name):
             id = pg2osm(source, id, working_area, db_name)
             # osmium sort runs everything in memory, may want to use osmosis instead
             run('osmium sort --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
-        except Exception as e:
-            logging.error(source.path.as_posix() + ' ' + e)
+        except CalledProcessError as error:
+            logging.error(source.path.as_posix() + ' staged for removal due to fileinfo failure')
             removal_list.append(source)
+        except UnboundLocalError as error:
+            logging.error(source.path.as_posix() + ' staged for removal due to id_end failure. Likely hashes only')
+            if source not in removal_list:
+                removal_list.append(source)
     # remove file from file list so merge will work
     for source in removal_list:
         working_area.master_list.remove(source)
@@ -301,7 +307,7 @@ def filter_data(working_area, db_name):
         # delete records with no or bad number field data
         if 'character' in r:
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for empty or null in' + source.table + ' ' + r.stdout)
+            logging.info('looking for empty or null in ' + source.table + ' ' + r.stdout)
             # us_wa_snohomish county
             r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
             logging.info('looking for UNKNOWN ' + source.table + ' ' + r.stdout)
@@ -310,6 +316,9 @@ def filter_data(working_area, db_name):
             logging.info('looking for empty or null ' + source.table + ' ' + r.stdout)
         else:
             logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
+       # delete record with illegal unicode chars in number field
+        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field)], capture_output=True, encoding='utf8')
+        logging.info('looking for illegal xml ' + r.stdout)
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for -- ' + source.table + ' ' + r.stdout)
