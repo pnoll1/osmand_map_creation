@@ -15,6 +15,8 @@ from multiprocessing import Pool
 import hashlib
 import logging
 import datetime
+import ogr2osm
+import addr_oa
 # config options
 from config import db_name, id, slice_config, batches, Xmx, log_level
 from secrets import oa_token
@@ -119,9 +121,19 @@ def pg2osm(source, id_start, working_area, db_name):
             logging.info('Error finding id_end in {0}. File is likely hashes only'.format(source.table))
             raise
 
-    number_field = 'number'
+    ogr2osmlogger = logging.getLogger('ogr2osm')
+    ogr2osmlogger.setLevel(logging.ERROR)
+    ogr2osmlogger.addHandler(logging.StreamHandler())
+    translation_object = addr_oa.OaTranslation()
+    datasource = ogr2osm.OgrDatasource(translation_object)
+    datasource.open_datasource("PG:dbname={0}".format(db_name))
+    datasource.set_query('select * from \"{0}\"'.format(source.table))
+    osmdata = ogr2osm.OsmData(translation_object)
+    osmdata.process(datasource)
+    datawriter = ogr2osm.OsmDataWriter(source.path_osm)
+
     try:
-        run('ogr2osm -f --id={0} -t addr_oa.py -o {1} "PG:dbname={2}"  --sql "select * from \\"{3}\\""'.format(id_start, source.path_osm, db_name, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
+        osmdata.output(datawriter)
     except CalledProcessError as error:
         logging.exception('ogr2osm failure in ' + source.table)
         raise

@@ -100,6 +100,7 @@ class IntegrationTests(unittest.TestCase):
         args.quality_check = True
         args.slice = False
         args.build = False
+        args.calculate_hashes = False
 
     def test_failure(self):
         '''
