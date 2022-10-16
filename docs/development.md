@@ -1,5 +1,5 @@
 # Architecture
-The program was built with flexbility and low maintenance as key factors.
+The program was built with flexibility and low maintenance as key factors.
 
 The process is:
     1. OpenAddresses(OA) data is downloaded using wget
@@ -21,7 +21,7 @@ The process is:
 It's recommended to open an issue with the idea first. Download setup.sh and setup_container.sh.
 
     ./setup_container.sh 
-    lxc-start osmand_map_cretion
+    lxc-start osmand_map_creation
     lxc-attach osmand_map_creation
     ./setup_app.sh. 
 
