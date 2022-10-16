@@ -53,11 +53,17 @@ class UnitTests(unittest.TestCase):
         # check for --
         r = run(['psql', '-d', 'gis', '-c', "select * from aa_filter_data_addresses_city where number='--'"], capture_output=True)
         self.assertRegex(str(r.stdout),'(0 rows)')
-        # check for illegal unicode
+        # check for illegal unicode in number
         r = run(['psql', '-d', 'gis', '-c', "select * from  aa_filter_data_addresses_city where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';"], capture_output=True)
+        self.assertRegex(str(r.stdout),'(0 rows)')
+        # check for illegal unicode in street
+        r = run(['psql', '-d', 'gis', '-c', "select * from  aa_filter_data_addresses_city where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';"], capture_output=True)
         self.assertRegex(str(r.stdout),'(0 rows)')
         # check for SN
         r = run(['psql', '-d', 'gis', '-c', "select * from  aa_filter_data_addresses_city where number='SN'"], capture_output=True)
+        self.assertRegex(str(r.stdout),'(0 rows)')
+        # check for records without geometry
+        r = run( ['psql', '-d', 'gis', '-c', "select * from aa_filter_data_addresses_city where wkb_geometry is null"], capture_output=True, encoding='utf8')
         self.assertRegex(str(r.stdout),'(0 rows)')
 
     def test_output_osm(self):

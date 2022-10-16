@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.4 (Debian 14.4-1+b1)
--- Dumped by pg_dump version 14.4 (Debian 14.4-1+b1)
+-- Dumped from database version 14.5 (Debian 14.5-2)
+-- Dumped by pg_dump version 14.5 (Debian 14.5-2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -78,6 +78,9 @@ COPY public.aa_filter_data_addresses_city (ogc_fid, id, unit, number, street, ci
 1			1	Di Mario Dr				02904	908f551defc1295a	0101000020E610000037F0B446CEDA51C04D593CABBBED4440
 2	0100101061763020-5		SN	CALLE EMILIO GARCÍA	ARELLANO	Aguascalientes	Aguascalientes		59a2672f7f81bc31	0101000020E6100000F1DB6B9CA89159C01C19F55A1ACD3540
 3			--	Linwood Ave				02907	e1262d57e0077c2e	0101000020E6100000430F6BE0FDDB51C0224212AC60E74440
+4	212888		1127\b	TANGELOS ST	BAKERSFIELD		CA	93306	11e4eb3ece546426	0101000020E6100000C3802557B1B95DC01E4BC4002EAF4140
+5			2857	RAYMOND J REED  SE	 				45e2b88e896ed2e6	0101000020E6100000C65EDED2A0EE5AC00348C89B57204040
+6			119	MAIN ST					5f1f1bb28879f693	\N
 \.
 
 
@@ -85,7 +88,7 @@ COPY public.aa_filter_data_addresses_city (ogc_fid, id, unit, number, street, ci
 -- Name: aa_filter_data_addresses_city_ogc_fid_seq; Type: SEQUENCE SET; Schema: public; Owner: pat
 --
 
-SELECT pg_catalog.setval('public.aa_filter_data_addresses_city_ogc_fid_seq', 3, true);
+SELECT pg_catalog.setval('public.aa_filter_data_addresses_city_ogc_fid_seq', 6, true);
 
 
 --
