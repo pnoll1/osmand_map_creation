@@ -366,6 +366,7 @@ def parse_meta_commands(args):
         args.quality_check = True
         args.slice = True
         args.build = True
+        args.calculate_hashes = True
     if args.normal:
         args.update_osm = True
         args.load_oa = True
@@ -375,6 +376,7 @@ def parse_meta_commands(args):
         args.quality_check = True
         args.slice = True
         args.build = True
+        args.calculate_hashes = True
 
 def clean_file_names():
     '''
@@ -471,6 +473,7 @@ def main(args=None):
     parser.add_argument('--quality-check', action='store_true', help='sort output file and run basic quality checks')
     parser.add_argument('--slice', action='store_true', help='splits areas into smaller regions if config present')
     parser.add_argument('--build', action='store_true', help='runs osmand map creator')
+    parser.add_argument('--calculate-hashes', action='store_true', help='creates hashes for obf files')
     parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
     parser.add_argument('--all', action='store_true', help='use all options')
     if len(batches) == 0:
@@ -491,15 +494,16 @@ def main(args=None):
             update_run_all_build(args, area_list)
             logging.info('obfs build stage finished for ' + i)
     clean_file_names()
-    # calculate file hashs
-    for file in Path('../../osmand_obf').iterdir():
-        if file.suffix == '.obf':
-            with open(file, 'rb') as opened_file:
-                data = opened_file.read()
-                sha256 = hashlib.sha256(data).hexdigest()
-                # write sha256 to file
-                with open(file.with_suffix('.sha256'),'w') as sha256_file:
-                    sha256_file.write(sha256 + ' ' + file.name)
+    # calculate file hashes
+    if args.calculate_hashes:
+        for file in Path('../../osmand_obf').iterdir():
+            if file.suffix == '.obf':
+                with open(file, 'rb') as opened_file:
+                    data = opened_file.read()
+                    sha256 = hashlib.sha256(data).hexdigest()
+                    # write sha256 to file
+                    with open(file.with_suffix('.sha256'),'w') as sha256_file:
+                        sha256_file.write(sha256 + ' ' + file.name)
     logging.info('script finished')
 
 if __name__ == '__main__':
