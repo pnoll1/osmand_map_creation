@@ -318,10 +318,10 @@ def filter_data(working_area, db_name):
             logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
        # delete record with illegal unicode chars in number field
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for illegal xml in number' + r.stdout)
+        logging.info('looking for illegal xml in number ' + source.table + ' ' + r.stdout)
        # delete record with illegal unicode chars in street field
         r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table)], capture_output=True, encoding='utf8')
-        logging.info('looking for illegal xml in street ' + r.stdout)
+        logging.info('looking for illegal xml in street ' + source.table + ' ' + r.stdout)
         # delete records with -- in nubmer field eg rancho cucamonga
         r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
         logging.info('looking for -- ' + source.table + ' ' + r.stdout)
