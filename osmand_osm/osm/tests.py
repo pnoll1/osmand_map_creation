@@ -4,6 +4,7 @@ import types
 import logging
 import datetime
 from pathlib import Path
+import psycopg2
 import processing
 
 logging.basicConfig(filename='processing_test_{0}.log'.format(datetime.datetime.today().isoformat()), level='DEBUG', format='%(asctime)s %(name)s %(levelname)s %(message)s')
@@ -15,6 +16,15 @@ class UnitTests(unittest.TestCase):
     '''
     test each function with crafted minimal cases
     '''
+
+    def setUp(self):
+        self.conn = psycopg2.connect('dbname=gis')
+        self.cur = self.conn.cursor()
+
+    def tearDown(self):
+        self.conn.rollback()
+        self.cur.close()
+        self.conn.close()
 
     def test_create_master_list(self):
         '''
@@ -31,44 +41,55 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(1, len(working_area.master_list))
 
     def test_load_oa(self):
-        run(['psql', '-d', 'gis', '-c', "drop table aa_load_oa_addresses_city"], capture_output=True)
+        # cleanup postgres table
+        self.cur.execute('drop table aa_load_oa_addresses_city')
+        self.conn.commit()
+        # load data into postgres
         run('psql -d gis < $PWD/aa/load_oa_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
         processing.load_oa(working_area, 'gis')
-        r = run('psql -d gis --csv -c "select * from aa_load_oa_addresses_city"', shell=True, capture_output=True)
+        self.cur.execute('select * from aa_load_oa_addresses_city')
+        data = self.cur.fetchall()
         # check for street
-        self.assertRegex(str(r.stdout),'Di Mario Dr')
+        self.assertRegex(data[0][4],'Di Mario Dr')
         # check for number
-        self.assertRegex(str(r.stdout),',,,1')
+        self.assertRegex(data[0][3],'1')
 
     def test_filter_data(self):
         # cleanup postgres table
-        run(['psql', '-d', 'gis', '-c', "drop table aa_filter_data_addresses_city"], capture_output=True)
+        self.cur.execute('drop table aa_filter_data_addresses_city')
+        self.conn.commit()
         # load data into postgres
         run('psql -d gis < $PWD/aa/filter_data_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/filter-data-addresses-city.geojson'))]
         processing.filter_data(working_area, 'gis')
         # check for --
-        r = run(['psql', '-d', 'gis', '-c', "select * from aa_filter_data_addresses_city where number='--'"], capture_output=True)
-        self.assertRegex(str(r.stdout),'(0 rows)')
+        self.cur.execute("select * from aa_filter_data_addresses_city where number='--'")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[])
         # check for illegal unicode in number
-        r = run(['psql', '-d', 'gis', '-c', "select * from  aa_filter_data_addresses_city where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';"], capture_output=True)
-        self.assertRegex(str(r.stdout),'(0 rows)')
+        self.cur.execute("select * from aa_filter_data_addresses_city where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[]) 
         # check for illegal unicode in street
-        r = run(['psql', '-d', 'gis', '-c', "select * from  aa_filter_data_addresses_city where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';"], capture_output=True)
-        self.assertRegex(str(r.stdout),'(0 rows)')
+        self.cur.execute("select * from aa_filter_data_addresses_city where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[]) 
         # check for SN
-        r = run(['psql', '-d', 'gis', '-c', "select * from  aa_filter_data_addresses_city where number='SN'"], capture_output=True)
-        self.assertRegex(str(r.stdout),'(0 rows)')
+        self.cur.execute("select * from aa_filter_data_addresses_city where number='SN'")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[])
         # check for records without geometry
-        r = run( ['psql', '-d', 'gis', '-c', "select * from aa_filter_data_addresses_city where wkb_geometry is null"], capture_output=True, encoding='utf8')
-        self.assertRegex(str(r.stdout),'(0 rows)')
+        self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry is null")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[])
 
     def test_output_osm(self):
         # cleanup postgres table
-        run(['psql', '-d', 'gis', '-c', "drop table aa_output_osm_addresses_city"], capture_output=True)
+        self.cur.execute('drop table aa_output_osm_addresses_city')
+        self.conn.commit()
         # load data into postgres
         run('psql -d gis < $PWD/aa/output_osm_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
