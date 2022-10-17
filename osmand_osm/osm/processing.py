@@ -15,6 +15,7 @@ from multiprocessing import Pool
 import hashlib
 import logging
 import datetime
+import psycopg2
 import ogr2osm
 import addr_oa
 # config options
@@ -312,37 +313,43 @@ def filter_data(working_area, db_name):
     output: none
     '''
     number_field = 'number'
+    conn = psycopg2.connect('dbname={0}'.format(db_name))
+    cur = conn.cursor()
     for source in working_area.master_list:
         logging.info('filtering {0}'.format(source.table))
         # find type of number field
-        r = run('psql -d gis -c "select pg_typeof({0}) from \\"{1}\\" limit 1;"'.format(number_field, source.table), shell=True, capture_output=True, encoding='utf8').stdout
+        cur.execute('select pg_typeof({0}) from \"{1}\"limit 1;'.format(number_field, source.table))
+        number_type = cur.fetchone()[0]
         # delete records with no or bad number field data
-        if 'character' in r:
-            r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for empty or null in ' + source.table + ' ' + r.stdout)
+        if 'character' in number_type:
+            cur.execute("DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field))
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
             # us_wa_snohomish county
-            r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for UNKNOWN ' + source.table + ' ' + r.stdout)
-        elif 'integer' in r or 'numeric' in r:
-            r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table, number_field)], capture_output=True, encoding='utf8')
-            logging.info('looking for empty or null ' + source.table + ' ' + r.stdout)
+            cur.execute("DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table, number_field))
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' UNKNOWN')
+        elif 'integer' in number_type or 'numeric' in number_type:
+            cur.execute("DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table, number_field))
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
         else:
             logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
        # delete record with illegal unicode chars in number field
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for illegal xml in number ' + source.table + ' ' + r.stdout)
+        cur.execute("delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in number')
        # delete record with illegal unicode chars in street field
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table)], capture_output=True, encoding='utf8')
-        logging.info('looking for illegal xml in street ' + source.table + ' ' + r.stdout)
+        cur.execute("delete from \"{0}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in street')
         # delete records with -- in nubmer field eg rancho cucamonga
-        r = run(['psql', '-d' , '{0}'.format(db_name), '-c', "DELETE from \"{0}\" where {1}='--'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for -- ' + source.table + ' ' + r.stdout)
+        cur.execute("DELETE from \"{0}\" where {1}='--'".format(source.table, number_field))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' --')
         # delete records where number=SN eg MX countrywide
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where {1}='SN'".format(source.table, number_field)], capture_output=True, encoding='utf8')
-        logging.info('looking for SN ' + source.table + ' ' + r.stdout)
+        cur.execute("delete from \"{0}\" where {1}='SN'".format(source.table, number_field))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' SN')
         # delete records without geometry
-        r = run( ['psql', '-d', '{0}'.format(db_name), '-c', "delete from \"{0}\" where wkb_geometry is null".format(source.table)], capture_output=True, encoding='utf8')
-        logging.info('looking for missing geometry ' + source.table + ' ' + r.stdout)
+        cur.execute("delete from \"{0}\" where wkb_geometry is null".format(source.table))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' missing geometry')
+        conn.commit()
+    cur.close()
+    conn.close()
 
 def slice(working_area, config):
     '''
