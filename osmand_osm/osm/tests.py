@@ -44,8 +44,6 @@ class UnitTests(unittest.TestCase):
         # cleanup postgres table
         self.cur.execute('drop table aa_load_oa_addresses_city')
         self.conn.commit()
-        # load data into postgres
-        run('psql -d gis < $PWD/aa/load_oa_addresses_city.sql',shell=True)
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
         processing.load_oa(working_area, 'gis')
