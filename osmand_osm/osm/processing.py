@@ -87,6 +87,7 @@ class Source():
         self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm'))
         # - is not allowed in postgres
         self.table = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','')
+        self.table_temp = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','') + '_temp'
 
     def __str__(self):
         return str(self.path)
@@ -176,14 +177,81 @@ def load_oa(working_area, db_name):
     action: loads oa into postgres+postgis db
     output: none
     '''
-    logging.info('Starting Load for: ' + working_area.name)
+    logging.info(working_area.name + ' load oa started')
     for source in working_area.master_list:
         logging.debug('Loading: ' + source.path.as_posix())
         try:
-            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
+            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table_temp), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
             logging.warning(working_area.name + ' ' + e)
     logging.info(working_area.name + ' ' + 'Load Finished')
+
+def filter_data(working_area, db_name):
+    '''
+    input: working_area object
+    action: delete records with bad data
+    output: none
+    '''
+    number_field = 'number'
+    conn = psycopg2.connect('dbname={0}'.format(db_name))
+    cur = conn.cursor()
+    for source in working_area.master_list:
+        logging.info('filtering {0}'.format(source.table_temp))
+        # find type of number field
+        cur.execute('select pg_typeof({0}) from \"{1}\"limit 1;'.format(number_field, source.table_temp))
+        number_type = cur.fetchone()[0]
+        # delete records with no or bad number field data
+        if 'character' in number_type:
+            cur.execute("DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table_temp, number_field))
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
+            # us_wa_snohomish county
+            cur.execute("DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table_temp, number_field))
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' UNKNOWN')
+        elif 'integer' in number_type or 'numeric' in number_type:
+            cur.execute("DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table_temp, number_field))
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
+        else:
+            logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
+       # delete record with illegal unicode chars in number field
+        cur.execute("delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table_temp, number_field))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in number')
+       # delete record with illegal unicode chars in street field
+        cur.execute("delete from \"{0}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table_temp))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in street')
+        # delete records with -- in nubmer field eg rancho cucamonga
+        cur.execute("DELETE from \"{0}\" where {1}='--'".format(source.table_temp, number_field))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' --')
+        # delete records where number=SN eg MX countrywide
+        cur.execute("delete from \"{0}\" where {1}='SN'".format(source.table_temp, number_field))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' SN')
+        # delete records without geometry
+        cur.execute("delete from \"{0}\" where wkb_geometry is null".format(source.table_temp))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' missing geometry')
+        # delete records located at 0,0
+        cur.execute("delete from \"{0}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';".format(source.table))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
+        conn.commit()
+    cur.close()
+    conn.close()
+
+def merge_oa(working_area, db_name):
+    '''
+    action: replaces source table with temp table if temp has more data
+    '''
+    conn = psycopg2.connect('dbname={0}'.format(db_name))
+    cur = conn.cursor()
+    for source in working_area.master_list:
+        cur.execute("select * from {0}".format(source.table_temp))
+        table_temp_count = len(cur.fetchall())
+        cur.execute("select * from {0}".format(source.table))
+        table_count = len(cur.fetchall())
+        if table_temp_count > table_count:
+            cur.execute("drop table {0}".format(source.table))
+            cur.execute("alter table {0} rename to {1}".format(source.table_temp, source.table))
+            conn.commit()
+            logging.info(source.table + 'updated')
+    cur.close()
+    conn.close()
 
 def output_osm(working_area, id, db_name):
     '''
@@ -311,57 +379,6 @@ def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     elif ready_to_move:
         run(['mv','{0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), pbf_output])
 
-def filter_data(working_area, db_name):
-    '''
-    input: working_area object
-    action: delete records with bad data
-    output: none
-    '''
-    number_field = 'number'
-    conn = psycopg2.connect('dbname={0}'.format(db_name))
-    cur = conn.cursor()
-    for source in working_area.master_list:
-        logging.info('filtering {0}'.format(source.table))
-        # find type of number field
-        cur.execute('select pg_typeof({0}) from \"{1}\"limit 1;'.format(number_field, source.table))
-        number_type = cur.fetchone()[0]
-        # delete records with no or bad number field data
-        if 'character' in number_type:
-            cur.execute("DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table, number_field))
-            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
-            # us_wa_snohomish county
-            cur.execute("DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table, number_field))
-            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' UNKNOWN')
-        elif 'integer' in number_type or 'numeric' in number_type:
-            cur.execute("DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table, number_field))
-            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
-        else:
-            logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
-        # delete records with nothing in street field
-        cur.execute("DELETE from \"{0}\" where street='' or street is null".format(source.table))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' street empty or null')
-        # delete record with illegal unicode chars in number field
-        cur.execute("delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table, number_field))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in number')
-        # delete record with illegal unicode chars in street field
-        cur.execute("delete from \"{0}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in street')
-        # delete records with -- in nubmer field eg rancho cucamonga
-        cur.execute("DELETE from \"{0}\" where {1}='--'".format(source.table, number_field))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' --')
-        # delete records where number=SN eg MX countrywide
-        cur.execute("delete from \"{0}\" where {1}='SN'".format(source.table, number_field))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' SN')
-        # delete records without geometry
-        cur.execute("delete from \"{0}\" where wkb_geometry is null".format(source.table))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' missing geometry')
-        # delete records located at 0,0
-        cur.execute("delete from \"{0}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';".format(source.table))
-        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
-        conn.commit()
-    cur.close()
-    conn.close()
-
 def slice(working_area, config):
     '''
     input: working_area object, slice configs(defined in config file)
@@ -390,6 +407,7 @@ def parse_meta_commands(args):
         args.update_osm = True
         args.load_oa = True
         args.filter_data = True
+        args.merge_oa = True
         args.output_osm = True
         args.merge = True
         args.quality_check = True
@@ -400,6 +418,7 @@ def parse_meta_commands(args):
         args.update_osm = True
         args.load_oa = True
         args.filter_data = True
+        args.merge_oa = True
         args.output_osm = True
         args.merge = True
         args.quality_check = True
@@ -455,6 +474,8 @@ def run_all(area, args):
         load_oa(working_area, db_name)
     if args.filter_data:
         filter_data(working_area, db_name)
+    if args.merge_oa:
+        merge_oa(working_area, db_name)
     if args.output_osm:
         output_osm(working_area, id, db_name)
     if args.update_osm:
@@ -499,6 +520,7 @@ def main(args=None):
     parser.add_argument('--update-oa', action='store_true', help='downloads OA data in oa_urls variable')
     parser.add_argument('--load-oa', action='store_true', help='loads OA data into database, overwriting previous')
     parser.add_argument('--filter-data', action='store_true', help='delete unwanted data from database')
+    parser.add_argument('--merge-oa', action='store_true', help='overwrites oa data in db with new oa data if better')
     parser.add_argument('--merge', action='store_true', help='merge extract with address files')
     parser.add_argument('--output-osm', action='store_true', help='output data from database to OSM files')
     parser.add_argument('--update-osm', action='store_true', help='downloads latest area extract, overwrites previous')

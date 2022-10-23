@@ -34,7 +34,7 @@ class UnitTests(unittest.TestCase):
         #iso3166-1
         working_area = processing.WorkingArea('aa')
         processing.create_master_list(working_area)
-        self.assertEqual(3, len(working_area.master_list))
+        self.assertEqual(4, len(working_area.master_list))
         #iso3166-2
         working_area = processing.WorkingArea('ab:aa')
         processing.create_master_list(working_area)
@@ -47,7 +47,7 @@ class UnitTests(unittest.TestCase):
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
         processing.load_oa(working_area, 'gis')
-        self.cur.execute('select * from aa_load_oa_addresses_city')
+        self.cur.execute('select * from aa_load_oa_addresses_city_temp')
         data = self.cur.fetchall()
         # check for street
         self.assertRegex(data[0][4],'Di Mario Dr')
@@ -67,11 +67,12 @@ class UnitTests(unittest.TestCase):
                 city character varying, district character varying, region character varying, \
                 postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
         self.cur.execute("insert into aa_load_oa_addresses_city (ogc_fid, number, street) values (%s, %s, %s)", (3, '2', 'Luigi Dr'))
+        self.cur.execute('drop table if exists aa_load_oa_addresses_city_temp')
         self.conn.commit()
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
         processing.load_oa(working_area, 'gis')
-        self.cur.execute('select * from aa_load_oa_addresses_city')
+        self.cur.execute('select * from aa_load_oa_addresses_city_temp')
         data = self.cur.fetchall()
         # check for street
         self.assertRegex(data[0][4],'Di Mario Dr')
@@ -80,10 +81,10 @@ class UnitTests(unittest.TestCase):
 
     def test_filter_data(self):
         # cleanup postgres table
-        self.cur.execute('drop table if exists aa_filter_data_addresses_city')
+        self.cur.execute('drop table if exists aa_filter_data_addresses_city_temp')
         self.conn.commit()
         # load data into postgres
-        run('psql -d gis < $PWD/aa/filter_data_addresses_city.sql',shell=True)
+        run('psql -d gis < $PWD/aa/filter_data_addresses_city_temp.sql',shell=True)
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/filter-data-addresses-city.geojson'))]
         processing.filter_data(working_area, 'gis')
@@ -92,29 +93,46 @@ class UnitTests(unittest.TestCase):
         data = self.cur.fetchall()
         self.assertEqual(data,[])
         # check for --
-        self.cur.execute("select * from aa_filter_data_addresses_city where number='--'")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where number='--'")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
         # check for illegal unicode in number
-        self.cur.execute("select * from aa_filter_data_addresses_city where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
         data = self.cur.fetchall()
         self.assertEqual(data,[]) 
         # check for illegal unicode in street
-        self.cur.execute("select * from aa_filter_data_addresses_city where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
         data = self.cur.fetchall()
         self.assertEqual(data,[]) 
         # check for SN
-        self.cur.execute("select * from aa_filter_data_addresses_city where number='SN'")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where number='SN'")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
         # check for records without geometry
-        self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry is null")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where wkb_geometry is null")
         data = self.cur.fetchall()
         self.assertEqual(data,[]) 
         # check for records with geometry at 0,0
         self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
+    
+    def test_merge_oa(self):
+        # cleanup postgres table
+        self.cur.execute("drop table if exists aa_merge_oa_addresses_city;")
+        self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
+        self.conn.commit()
+        # load data into postgres
+        run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
+        run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
+        working_area = processing.WorkingArea('aa')
+        db_name = 'gis'
+        working_area.master_list = [processing.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        processing.merge_oa(working_area, db_name)
+        self.cur.execute("select * from aa_merge_oa_addresses_city;")
+        data = self.cur.fetchall()
+        # check that temp table copied over
+        self.assertEqual(data[1][2],'115')
 
     def test_output_osm_ids(self):
         '''
