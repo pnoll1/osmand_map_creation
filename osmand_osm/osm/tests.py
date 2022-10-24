@@ -133,6 +133,23 @@ class UnitTests(unittest.TestCase):
         data = self.cur.fetchall()
         # check that temp table copied over
         self.assertEqual(data[1][2],'115')
+    
+    def test_merge_oa_first_run(self):
+        # cleanup postgres table
+        self.cur.execute("drop table if exists aa_merge_oa_addresses_city;")
+        self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
+        self.conn.commit()
+        # load data into postgres
+        #run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
+        run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
+        working_area = processing.WorkingArea('aa')
+        db_name = 'gis'
+        working_area.master_list = [processing.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        processing.merge_oa(working_area, db_name)
+        self.cur.execute("select * from aa_merge_oa_addresses_city;")
+        data = self.cur.fetchall()
+        # check that temp table copied over
+        self.assertEqual(data[1][2],'115')
 
     def test_output_osm_ids(self):
         '''

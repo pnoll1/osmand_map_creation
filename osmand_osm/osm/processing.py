@@ -243,10 +243,15 @@ def merge_oa(working_area, db_name):
     for source in working_area.master_list:
         cur.execute("select * from {0}".format(source.table_temp))
         table_temp_count = len(cur.fetchall())
-        cur.execute("select * from {0}".format(source.table))
-        table_count = len(cur.fetchall())
-        if table_temp_count > table_count:
-            cur.execute("drop table {0}".format(source.table))
+        try:
+            cur.execute("select * from {0}".format(source.table))
+            table_count = len(cur.fetchall())
+        # handle first run where table won't exist
+        except:
+            conn.rollback()
+            table_count = 0 
+        if table_temp_count >= table_count:
+            cur.execute("drop table if exists {0}".format(source.table))
             cur.execute("alter table {0} rename to {1}".format(source.table_temp, source.table))
             conn.commit()
             logging.info(source.table + 'updated')
