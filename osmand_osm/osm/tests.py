@@ -80,7 +80,7 @@ class UnitTests(unittest.TestCase):
 
     def test_filter_data(self):
         # cleanup postgres table
-        self.cur.execute('drop table aa_filter_data_addresses_city')
+        self.cur.execute('drop table if exists aa_filter_data_addresses_city')
         self.conn.commit()
         # load data into postgres
         run('psql -d gis < $PWD/aa/filter_data_addresses_city.sql',shell=True)
@@ -105,6 +105,8 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(data,[])
         # check for records without geometry
         self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry is null")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[]) 
         # check for records with geometry at 0,0
         self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
         data = self.cur.fetchall()
@@ -112,7 +114,7 @@ class UnitTests(unittest.TestCase):
 
     def test_output_osm(self):
         # cleanup postgres table
-        self.cur.execute('drop table aa_output_osm_addresses_city')
+        self.cur.execute('drop table if exists aa_output_osm_addresses_city')
         self.conn.commit()
         # load data into postgres
         run('psql -d gis < $PWD/aa/output_osm_addresses_city.sql',shell=True)
