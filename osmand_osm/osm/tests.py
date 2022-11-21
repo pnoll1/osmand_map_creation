@@ -40,9 +40,33 @@ class UnitTests(unittest.TestCase):
         processing.create_master_list(working_area)
         self.assertEqual(1, len(working_area.master_list))
 
-    def test_load_oa(self):
+    def test_load_oa_first_run(self):
         # cleanup postgres table
-        self.cur.execute('drop table aa_load_oa_addresses_city')
+        self.cur.execute('drop table if exists aa_load_oa_addresses_city')
+        self.conn.commit()
+        working_area = processing.WorkingArea('aa')
+        working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
+        processing.load_oa(working_area, 'gis')
+        self.cur.execute('select * from aa_load_oa_addresses_city')
+        data = self.cur.fetchall()
+        # check for street
+        self.assertRegex(data[0][4],'Di Mario Dr')
+        # check for number
+        self.assertRegex(data[0][3],'1')
+
+    def test_load_oa(self):
+        '''
+        ensure overwriting table works
+        '''
+        # cleanup postgres table
+        self.cur.execute('drop table if exists aa_load_oa_addresses_city')
+        self.conn.commit()
+        # load data into postgres
+        self.cur.execute("create table aa_load_oa_addresses_city (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_load_oa_addresses_city (ogc_fid, number, street) values (%s, %s, %s)", (3, '2', 'Luigi Dr'))
         self.conn.commit()
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
