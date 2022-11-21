@@ -155,14 +155,18 @@ def create_master_list(working_area):
             file_list.append(Source(filename))
 
     file_list = []
-    for i in working_area.directory.iterdir():
-        # handle iso3166-1 (country)
-        if i.is_dir():
-            for filename in i.iterdir():
-                add_to_master_list(filename)
-        else:
-            # handle iso3166-2 (country and subdivision)
-            add_to_master_list(i)
+    try:
+        for i in working_area.directory.iterdir():
+            # handle iso3166-1 (country)
+            if i.is_dir():
+                for filename in i.iterdir():
+                    add_to_master_list(filename)
+            else:
+                # handle iso3166-2 (country and subdivision)
+                add_to_master_list(i)
+    except FileNotFoundError:
+        logging.error(working_area.name + ' No such file or directory. Is there OA data?')
+        raise
     working_area.master_list = file_list
     logging.debug(working_area.master_list)
     logging.info(working_area.name + ' ' + 'Master List Created')
