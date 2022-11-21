@@ -4,3 +4,4 @@
 {"type":"Feature","properties":{"hash":"11e4eb3ece546426","number":"1127\b","street":"TANGELOS ST","unit":"","city":"BAKERSFIELD","district":"","region":"CA","postcode":"93306","id":"212888"},"geometry":{"type":"Point","coordinates":[-118.901449,35.3685914]}}
 {"type":"Feature","properties":{"id":"","unit":"","number":"2857","street":"RAYMOND J REED \u001b SE","city":" ","district":"","region":"","postcode":"","hash":"45e2b88e896ed2e6"},"geometry":{"type":"Point","coordinates":[-107.7285659,32.2526736]}}
 {"type":"Feature","properties":{"hash":"5f1f1bb28879f693","number":"119","street":"MAIN ST","unit":"","city":"","district":"","region":"","postcode":"","id":""},"geometry":null}
+{"type":"Feature","properties":{"id":"","unit":"","number":"147","street":"ABBOTSFORD Road","city":"BOWEN HILLS","district":"","region":"","postcode":"4006","hash":"183080127302f78f"},"geometry":{"type":"Point","coordinates":[0,0]}}

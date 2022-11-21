@@ -81,6 +81,7 @@ COPY public.aa_filter_data_addresses_city (ogc_fid, id, unit, number, street, ci
 4	212888		1127\b	TANGELOS ST	BAKERSFIELD		CA	93306	11e4eb3ece546426	0101000020E6100000C3802557B1B95DC01E4BC4002EAF4140
 5			2857	RAYMOND J REED  SE	 				45e2b88e896ed2e6	0101000020E6100000C65EDED2A0EE5AC00348C89B57204040
 6			119	MAIN ST					5f1f1bb28879f693	\N
+7			147	ABBOTSFORD Road	BOWEN HILLS			4006	183080127302f78f	0101000020E610000000000000000000000000000000000000
 \.
 
 
@@ -88,7 +89,7 @@ COPY public.aa_filter_data_addresses_city (ogc_fid, id, unit, number, street, ci
 -- Name: aa_filter_data_addresses_city_ogc_fid_seq; Type: SEQUENCE SET; Schema: public; Owner: pat
 --
 
-SELECT pg_catalog.setval('public.aa_filter_data_addresses_city_ogc_fid_seq', 6, true);
+SELECT pg_catalog.setval('public.aa_filter_data_addresses_city_ogc_fid_seq', 7, true);
 
 
 --

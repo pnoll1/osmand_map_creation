@@ -348,6 +348,9 @@ def filter_data(working_area, db_name):
         # delete records without geometry
         cur.execute("delete from \"{0}\" where wkb_geometry is null".format(source.table))
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' missing geometry')
+        # delete records located at 0,0
+        cur.execute("delete from \"{0}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';".format(source.table))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
         conn.commit()
     cur.close()
     conn.close()

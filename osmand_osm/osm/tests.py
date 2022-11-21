@@ -81,6 +81,8 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(data,[])
         # check for records without geometry
         self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry is null")
+        # check for records with geometry at 0,0
+        self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
 
