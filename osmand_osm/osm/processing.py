@@ -111,7 +111,7 @@ def pg2osm(source, id_start, working_area, db_name):
     '''
     def oa_quality_check(source):
         try:
-            stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
+            stats = run('osmium fileinfo --no-progress -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
             logging.warning('pg2osm fileinfo failure in {0}: '.format(source.table) + error.stderr)
         # handle files with hashes only
@@ -200,7 +200,7 @@ def output_osm(working_area, id, db_name):
             logging.info('writing osm file for ' + source.path.as_posix())
             id = pg2osm(source, id, working_area, db_name)
             # osmium sort runs everything in memory, may want to use osmosis instead
-            run('osmium sort --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
+            run('osmium sort --no-progress --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
         except CalledProcessError as error:
             logging.warning(source.path.as_posix() + ' staged for removal due to fileinfo failure')
             removal_list.append(source)
@@ -244,7 +244,7 @@ def merge(working_area):
         source_list_string = source_list_string + ' ' + source.path_osm.as_posix()
     source_list_string = source_list_string.lstrip(' ')
     try:
-        run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
+        run('osmium merge --no-progress -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
         logging.error(working_area.name + ' Merge Failed', exc_info = True)
         return
@@ -258,21 +258,21 @@ def prep_for_qa(working_area):
     '''
     # get data for last source ran
     try:
-        stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats = run('osmium fileinfo --no-progress -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         logging.error(working_area.master_list[-1].path_osm + 'fileinfo error for last source ran: ' + e)
         ready_to_move=False
         raise
     # get data for OSM extract
     try:
-        stats_area = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_area = run('osmium fileinfo --no-progress -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         logging.error(working_area.short_name + ' fileinfo error in osm extract: ' + e)
         ready_to_move=False
         raise
     # get data for completed state file
     try:
-        stats_final = run('osmium fileinfo -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_final = run('osmium fileinfo --no-progress -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         logging.error(working_area.name_underscore + ' fileinfo error in completed file: ' + e)
         ready_to_move=False
