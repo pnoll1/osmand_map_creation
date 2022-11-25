@@ -431,7 +431,10 @@ def update_run_all_build(args, area_list):
     # build obfs
     if args.build:
         logging.info('Builds started')
-        run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
+        try:
+            run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
+        except CalledProcessError as error:
+            logging.error(str(area_list) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details', exc_info = True)
         # move files out of build folder
         run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
 
