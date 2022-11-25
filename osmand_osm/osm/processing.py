@@ -113,7 +113,7 @@ def pg2osm(source, id_start, working_area, db_name):
         try:
             stats = run('osmium fileinfo -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
-            logging.error('pg2osm fileinfo failure in {0}: '.format(source.table) + error.stderr)
+            logging.warning('pg2osm fileinfo failure in {0}: '.format(source.table) + error.stderr)
         # handle files with hashes only
         try:
             id_end = json.loads(stats.stdout)['data']['minid']['nodes']
@@ -137,7 +137,7 @@ def pg2osm(source, id_start, working_area, db_name):
     try:
         osmdata.output(datawriter)
     except CalledProcessError as error:
-        logging.exception('ogr2osm failure in ' + source.table)
+        logging.warning('ogr2osm failure in ' + source.table, exc_info = True)
         raise
     id_end = oa_quality_check(source)
     return id_end
@@ -183,7 +183,7 @@ def load_oa(working_area, db_name):
         try:
             run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table), shell=True, capture_output=True, check=True, encoding='utf8')
         except Exception as e:
-            logging.error(working_area.name + ' ' + e)
+            logging.warning(working_area.name + ' ' + e)
     logging.info(working_area.name + ' ' + 'Load Finished')
 
 def output_osm(working_area, id, db_name):
@@ -202,10 +202,10 @@ def output_osm(working_area, id, db_name):
             # osmium sort runs everything in memory, may want to use osmosis instead
             run('osmium sort --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
         except CalledProcessError as error:
-            logging.error(source.path.as_posix() + ' staged for removal due to fileinfo failure')
+            logging.warning(source.path.as_posix() + ' staged for removal due to fileinfo failure')
             removal_list.append(source)
         except UnboundLocalError as error:
-            logging.error(source.path.as_posix() + ' staged for removal due to id_end failure. Likely hashes only')
+            logging.warning(source.path.as_posix() + ' staged for removal due to id_end failure. Likely hashes only')
             if source not in removal_list:
                 removal_list.append(source)
     # remove file from file list so merge will work
@@ -246,8 +246,7 @@ def merge(working_area):
     try:
         run('osmium merge -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
-        logging.error(working_area.name + ' ' + e.stderr)
-        logging.error(working_area.name + ' Merge Failed')
+        logging.error(working_area.name + ' Merge Failed', exc_info = True)
         return
     logging.info(working_area.name + ' Merge Finished')
     return
@@ -261,21 +260,21 @@ def prep_for_qa(working_area):
     try:
         stats = run('osmium fileinfo -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error('fileinfo error for last source ran: ' + working_area.master_list[-1].path_osm + ' ' + e)
+        logging.error(working_area.master_list[-1].path_osm + 'fileinfo error for last source ran: ' + e)
         ready_to_move=False
         raise
     # get data for OSM extract
     try:
         stats_area = run('osmium fileinfo -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error('fileinfo error in osm extract: ' + working_area.short_name + ' ' + e)
+        logging.error(working_area.short_name + ' fileinfo error in osm extract: ' + e)
         ready_to_move=False
         raise
     # get data for completed state file
     try:
         stats_final = run('osmium fileinfo -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
-        logging.error('fileinfo error in completed file: ' + working_area.name_underscore + ' ' + e)
+        logging.error(working_area.name_underscore + ' fileinfo error in completed file: ' + e)
         ready_to_move=False
         raise
     return stats, stats_area, stats_final
@@ -375,7 +374,7 @@ def slice(working_area, config):
             try:
                 run('osmium extract -O -b {3} -o {0}/{1}_{2}.osm.pbf {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
             except Exception as e:
-                logging.error(working.area.name + e.stderr)
+                logging.error(working_area.name + ' osmium extract error' + e)
         sliced_state = config[working_area.name]
         return sliced_state
 
@@ -455,7 +454,7 @@ def run_all(area, args):
     if args.update_osm:
         url = geofabrik_lookup(working_area)
         if url is None:
-            logging.error('could not find geofabrik url for ' + working_area.name)
+            logging.error( working_area.name + 'could not find geofabrik url for ')
             raise ValueError
         try:
             update_osm(working_area, url)
