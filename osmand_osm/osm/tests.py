@@ -129,6 +129,30 @@ class UnitTests(unittest.TestCase):
             # check that ogr2osm doesn't merge
             self.assertRegex(file_text, '\"#A01 E CHERRY LN\"')
 
+    def test_slice_do_nothing(self):
+        slice_config = {}
+        slice_config['au'] = [['north', '95.888672,-8.00000,163.081055,-30.372875'],['southwest', '95.888672,-30.372875,140,-51.672555'],['southeast','140,-51.672555,163.081055,-30.372875']]
+        working_area = processing.WorkingArea('aa')
+        sliced_area = processing.slice(working_area, slice_config)
+        self.assertEqual(sliced_area, None)
+
+    def test_slice(self):
+        slice_config = {}
+        slice_config['aa'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '-79.508,24.237,-82.579,27.079']]
+        working_area = processing.WorkingArea('aa')
+        sliced_area = processing.slice(working_area, slice_config)
+        # check function output
+        self.assertEqual(sliced_area, slice_config['aa'])
+        # check file output
+        run('osmium cat --no-progress -f osm aa/aa_south.osm.pbf > aa/aa_south.osm', shell=True)
+        with open('aa/aa_south.osm') as test_file:
+            file_text = test_file.read()
+            self.assertRegex(file_text, 'SW 223 ST')
+        run('osmium cat --no-progress -f osm aa/aa_north.osm.pbf > aa/aa_north.osm', shell=True)
+        with open('aa/aa_north.osm') as test_file:
+            file_text = test_file.read()
+            self.assertRegex(file_text, 'OLD BELLAMY RD')
+
 class IntegrationTests(unittest.TestCase):
     '''
     runs on real data from oa to check if program and data are as expected

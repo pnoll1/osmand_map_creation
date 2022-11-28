@@ -367,14 +367,13 @@ def slice(working_area, config):
     '''
     if working_area.name in config.keys():
         for slice_config in config[working_area.name]:
-            logging.info('Slicing ' + working_area.name)
-            # better as dict?
-            slice_name = slice_config[0]
+            slice_name = working_area.name_underscore + '_' + slice_config[0]
             bounding_box = slice_config[1]
+            logging.info(slice_name + ' slicing')
             try:
-                run('osmium extract -O -b {3} -o {0}/{1}_{2}.osm.pbf {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
-            except Exception as e:
-                logging.error(working_area.name + ' osmium extract error' + e)
+                run('osmium extract -O -b {3} -o {0}/{2}.osm.pbf {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
+            except CalledProcessError as e:
+                logging.error(working_area.name + ' osmium extract error' + e.stderr)
         sliced_state = config[working_area.name]
         return sliced_state
 

@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="osmium/1.14.0">
+  <node id="17179342298" lat="25.5604901" lon="-80.3542797">
+    <tag k="addr:housenumber" v="10059"/>
+    <tag k="addr:street" v="SW 223 ST"/>
+    <tag k="addr:city" v="Cutler Bay"/>
+    <tag k="addr:postcode" v="33190-1575"/>
+  </node>
+  <node id="17179722588" lat="29.8907384" lon="-82.5504707">
+    <tag k="addr:housenumber" v="25129"/>
+    <tag k="addr:street" v="OLD BELLAMY RD"/>
+    <tag k="addr:city" v="High Springs"/>
+  </node>
+</osm>
