@@ -72,7 +72,7 @@ class WorkingArea():
         self.master_list = None
         self.obf_name = self.name_underscore.capitalize() + '.obf'
 
-    def __string__(self):
+    def __str__(self):
         return str(self.short_name)
 
     def __repr__(self):
@@ -88,7 +88,7 @@ class Source():
         # - is not allowed in postgres
         self.table = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','')
 
-    def __string__(self):
+    def __str__(self):
         return str(self.path)
 
     def __repr__(self):
