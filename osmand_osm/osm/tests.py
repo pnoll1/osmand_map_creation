@@ -156,9 +156,10 @@ class UnitTests(unittest.TestCase):
 class IntegrationTests(unittest.TestCase):
     '''
     runs on real data from oa to check if program and data are as expected
+    requires oa and osm data already downloaded
     '''
     def setUp(self):
-        args.area_list = ['us:pr']
+        args.area_list = ['']
         args.load_oa = True
         args.all = False
         args.normal = False
@@ -181,6 +182,34 @@ class IntegrationTests(unittest.TestCase):
         '''
         Should always succeed
         us:ri consistently succeeds and small so runs quick
+        '''
+        args.area_list = ['us:ri']
+        processing.main(args)
+
+class BuildTests(unittest.TestCase):
+    '''
+    runs build with real data
+    requires oa and osm already downloaded
+    '''
+    def setUp(self):
+        args.area_list = ['']
+        args.load_oa = True
+        args.all = False
+        args.normal = False
+        args.processes = 2
+        args.update_oa = False
+        args.filter_data = True
+        args.output_osm = True
+        args.update_osm = False
+        args.merge = True
+        args.quality_check = True
+        args.slice = True
+        args.build = True
+        args.calculate_hashes = False
+
+    def test_ri(self):
+        '''
+        build ri using data on hand
         '''
         args.area_list = ['us:ri']
         processing.main(args)
