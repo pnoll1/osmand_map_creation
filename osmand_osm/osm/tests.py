@@ -87,6 +87,10 @@ class UnitTests(unittest.TestCase):
         working_area = processing.WorkingArea('aa')
         working_area.master_list = [processing.Source(Path('aa/filter-data-addresses-city.geojson'))]
         processing.filter_data(working_area, 'gis')
+        # check for empty street
+        self.cur.execute("select * from aa_filter_data_addresses_city where street='' or street is null")
+        data = self.cur.fetchall()
+        self.assertEqual(data,[])
         # check for --
         self.cur.execute("select * from aa_filter_data_addresses_city where number='--'")
         data = self.cur.fetchall()

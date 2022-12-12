@@ -82,6 +82,7 @@ COPY public.aa_filter_data_addresses_city (ogc_fid, id, unit, number, street, ci
 5			2857	RAYMOND J REED  SE	 				45e2b88e896ed2e6	0101000020E6100000C65EDED2A0EE5AC00348C89B57204040
 6			119	MAIN ST					5f1f1bb28879f693	\N
 7			147	ABBOTSFORD Road	BOWEN HILLS			4006	183080127302f78f	0101000020E610000000000000000000000000000000000000
+8	BE-WAL:1522363	B001	93					1420	aaff5827c1009fba	0101000020E6100000F99D2633DE861140D73ACCF2D0574940
 \.
 
 
@@ -89,7 +90,7 @@ COPY public.aa_filter_data_addresses_city (ogc_fid, id, unit, number, street, ci
 -- Name: aa_filter_data_addresses_city_ogc_fid_seq; Type: SEQUENCE SET; Schema: public; Owner: pat
 --
 
-SELECT pg_catalog.setval('public.aa_filter_data_addresses_city_ogc_fid_seq', 7, true);
+SELECT pg_catalog.setval('public.aa_filter_data_addresses_city_ogc_fid_seq', 8, true);
 
 
 --
