@@ -126,11 +126,10 @@ def pg2osm(source, id_start, working_area, db_name):
     ogr2osmlogger.setLevel(logging.ERROR)
     ogr2osmlogger.addHandler(logging.StreamHandler())
     translation_object = addr_oa.OaTranslation()
-    ogr2osm.osm_geometries.OsmId.set_id(id)
     datasource = ogr2osm.OgrDatasource(translation_object)
     datasource.open_datasource("PG:dbname={0}".format(db_name))
     datasource.set_query('select * from \"{0}\"'.format(source.table))
-    osmdata = ogr2osm.OsmData(translation_object)
+    osmdata = ogr2osm.OsmData(translation_object,start_id=id)
     osmdata.process(datasource)
     datawriter = ogr2osm.OsmDataWriter(source.path_osm)
 
