@@ -32,13 +32,16 @@ cp batch.xml.template batch.xml
 sudo -u postgres createdb gis
 sudo -u postgres psql -d gis -c "create extension postgis;"
 # Change user to your username
-sudo -u postgres psql -d gis -c "create user pat with password 'password';"  
+sudo -u postgres psql -d gis -c "create user pat with password 'password';"
+# give user own schema where tables will be created
+sudo -u postgres psql -d gis -c "create schema authorization pat"
 # Download Geofabrik index to same folder as script
 cd $install_dir/osmand_osm/osm
-wget https://download.geofabrik.de/index-v1.json
+wget -O geofabrik_index-v1.json https://download.geofabrik.de/index-v1.json
 touch secrets.py
 echo "add OA token obtained from OA website in secrets.py as oa_token = 'token_data'"
 cp config.template config.py
 # Change details in config.py if needed
 sudo chown -R pat /home/pat/projects
-
+# give pat sudo for updates
+echo 'pat ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/pat
