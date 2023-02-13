@@ -116,7 +116,49 @@ class UnitTests(unittest.TestCase):
         data = self.cur.fetchall()
         self.assertEqual(data,[])
 
-    def test_output_osm(self):
+    def test_output_osm_ids(self):
+        '''
+        make sure address ids in output files don't overlap
+        '''
+        # cleanup tables
+        self.cur.execute('drop table if exists aa_output_osm_ids')
+        self.cur.execute('drop table if exists aa_output_osm_ids2')
+        self.conn.commit()
+        # setup tables
+        self.cur.execute("create table aa_output_osm_ids (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_output_osm_ids (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (2, '71', 'Linwood Ave', '02907', 'e1262d57e0077c2e', 'POINT(-71.4373704 41.8076377)'))
+        self.cur.execute("create table aa_output_osm_ids2 (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_output_osm_ids2 (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (3, '1', 'Di Mario Dr', '02904', '908f551defc1295a', 'POINT(-71.4188401 41.8572897)'))
+        self.conn.commit()
+        working_area = processing.WorkingArea('aa')
+        working_area.master_list = [processing.Source(Path('aa/output-osm-ids.geojson')) \
+                , processing.Source(Path('aa/output-osm-ids2.geojson'))]
+        db_name = 'gis'
+        id = 2**34
+        processing.output_osm(working_area, id, db_name)
+        # check output files have ids different and descending
+        with open('aa/output-osm-ids_addresses.osm') as test_file:
+            file_text = test_file.read()
+            self.assertRegex(file_text, '17179869183', 'osm id did not start at right location')
+        with open('aa/output-osm-ids2_addresses.osm') as test_file:
+            file_text = test_file.read()
+            self.assertRegex(file_text, '17179869182', 'osm id did not decrease in second file')
+        self.conn.commit()
+
+    def test_output_osm_merge(self):
+        '''
+        make sure osm doesn't merge addresses at same position
+        '''
         # cleanup postgres table
         self.cur.execute('drop table if exists aa_output_osm_addresses_city')
         self.conn.commit()

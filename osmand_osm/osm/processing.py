@@ -129,7 +129,7 @@ def pg2osm(source, id_start, working_area, db_name):
     datasource = ogr2osm.OgrDatasource(translation_object)
     datasource.open_datasource("PG:dbname={0}".format(db_name))
     datasource.set_query('select * from \"{0}\"'.format(source.table))
-    osmdata = ogr2osm.OsmData(translation_object,start_id=id)
+    osmdata = ogr2osm.OsmData(translation_object,start_id=id_start)
     osmdata.process(datasource)
     datawriter = ogr2osm.OsmDataWriter(source.path_osm)
 
@@ -243,7 +243,9 @@ def merge(working_area):
         source_list_string = source_list_string + ' ' + source.path_osm.as_posix()
     source_list_string = source_list_string.lstrip(' ')
     try:
-        run('osmium merge --no-progress -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore), shell=True, capture_output=True, check=True, encoding='utf8')
+        merge_command = 'osmium merge --no-progress -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore)
+        logging.debug(working_area.name + ' merge command: ' + merge_command)
+        run(merge_command, shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
         logging.error(working_area.name + ' Merge Failed', exc_info = True)
         return
