@@ -246,6 +246,7 @@ class IntegrationTests(unittest.TestCase):
         args.normal = False
         args.processes = 2
         args.update_oa = False
+        args.merge_oa = True
         args.filter_data = True
         args.output_osm = True
         args.update_osm = False
