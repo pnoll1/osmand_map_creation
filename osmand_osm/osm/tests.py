@@ -117,18 +117,46 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
-    
+
     def test_merge_oa(self):
-        '''
-        test additional data inserted from temp table when table already exists
+        '''       
+        test additional data inserted from temp table when table already exists with data
+        test that only 1 of each address gets inserted when there's duplicates
         '''
         # cleanup postgres table
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city;")
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
         self.conn.commit()
         # load data into postgres
-        run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
-        run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
+        #run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
+        #run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
+        # create temp table
+        self.cur.execute("create table aa_merge_oa_addresses_city_temp (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (3, '115', 'NW 41st ST', '98107', '87d28792bee6b164', 'POINT(-122.3578935 47.6561136)'))
+        # insert dupe test
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (5, '71', 'Linwood Ave', '02907', 'e1262d57e0077c2e', 'POINT(-71.4373704 41.8076377)'))
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (6, '71', 'Linwood Ave', '02907', 'e1262d57e0077c2e', 'POINT(-71.4373704 41.8076377)'))
+        # create table
+        self.cur.execute("create table aa_merge_oa_addresses_city (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_merge_oa_addresses_city (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
+        self.conn.commit()
         working_area = processing.WorkingArea('aa')
         db_name = 'gis'
         working_area.master_list = [processing.Source(Path('aa/merge-oa-addresses-city.geojson'))]
@@ -137,7 +165,7 @@ class UnitTests(unittest.TestCase):
         data = self.cur.fetchall()
         # check that temp table copied over
         self.assertEqual(data[1][2],'115')
-    
+
     def test_merge_oa_first_run(self):
         '''
         test with temp table loading with no existing table
@@ -156,7 +184,7 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
-        self.assertEqual(data[1][2],'115')
+        self.assertEqual(data[0][2],'115')
 
     def test_output_osm_ids(self):
         '''
