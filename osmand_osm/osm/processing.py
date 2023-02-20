@@ -180,10 +180,17 @@ def load_oa(working_area, db_name):
     logging.info(working_area.name + ' load oa started')
     for source in working_area.master_list:
         logging.debug('Loading: ' + source.path.as_posix())
+        conn = psycopg2.connect('dbname={0}'.format(db_name))
+        cur = conn.cursor()
+        # ogr2ogr errors out if index exists
+        cur.execute('drop index if exists {0}_wkb_geometry_geom_idx'.format(source.table_temp))
+        conn.commit()
+        cur.close()
+        conn.close()
         try:
             run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table_temp), shell=True, capture_output=True, check=True, encoding='utf8')
-        except Exception as e:
-            logging.warning(working_area.name + ' ' + e)
+        except CalledProcessError as error:
+            logging.warning(working_area.name + ' ' + error.stderr)
     logging.info(working_area.name + ' ' + 'Load Finished')
 
 def filter_data(working_area, db_name):
@@ -228,7 +235,7 @@ def filter_data(working_area, db_name):
         cur.execute("delete from \"{0}\" where wkb_geometry is null".format(source.table_temp))
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' missing geometry')
         # delete records located at 0,0
-        cur.execute("delete from \"{0}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';".format(source.table))
+        cur.execute("delete from \"{0}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';".format(source.table_temp))
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
         conn.commit()
     cur.close()
@@ -236,25 +243,19 @@ def filter_data(working_area, db_name):
 
 def merge_oa(working_area, db_name):
     '''
-    action: replaces source table with temp table if temp has more data
+    action: insert data from temp table if not present in table based on hash
     '''
     conn = psycopg2.connect('dbname={0}'.format(db_name))
     cur = conn.cursor()
     for source in working_area.master_list:
-        cur.execute("select * from {0}".format(source.table_temp))
-        table_temp_count = len(cur.fetchall())
-        try:
-            cur.execute("select * from {0}".format(source.table))
-            table_count = len(cur.fetchall())
-        # handle first run where table won't exist
-        except:
-            conn.rollback()
-            table_count = 0 
-        if table_temp_count >= table_count:
-            cur.execute("drop table if exists {0}".format(source.table))
-            cur.execute("alter table {0} rename to {1}".format(source.table_temp, source.table))
-            conn.commit()
-            logging.info(source.table + 'updated')
+        # create table for first run
+        cur.execute("create table if not exists {0} as table {1} with no data".format(source.table, source.table_temp))
+        # set hash to unique
+        cur.execute("alter table {0} add unique (hash)".format(source.table))
+        # insert addresses from temp table if not there, using hash as unique key
+        cur.execute('insert into {0} select distinct on (hash) * from {1} on conflict (hash) do nothing'.format(source.table, source.table_temp))
+        logging.info(source.table + ' Insert ' + str(cur.rowcount))
+        conn.commit()
     cur.close()
     conn.close()
 

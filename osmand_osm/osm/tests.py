@@ -67,6 +67,7 @@ class UnitTests(unittest.TestCase):
                 city character varying, district character varying, region character varying, \
                 postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
         self.cur.execute("insert into aa_load_oa_addresses_city (ogc_fid, number, street) values (%s, %s, %s)", (3, '2', 'Luigi Dr'))
+        #cself.cur.execute("CREATE INDEX aa_load_oa_addresses_city_temp_wkb_geometry_geom_idx ON public.aa_load_oa_addresses_city_temp USING gist (wkb_geometry)")
         self.cur.execute('drop table if exists aa_load_oa_addresses_city_temp')
         self.conn.commit()
         working_area = processing.WorkingArea('aa')
@@ -89,7 +90,7 @@ class UnitTests(unittest.TestCase):
         working_area.master_list = [processing.Source(Path('aa/filter-data-addresses-city.geojson'))]
         processing.filter_data(working_area, 'gis')
         # check for empty street
-        self.cur.execute("select * from aa_filter_data_addresses_city where street='' or street is null")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where street='' or street is null")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
         # check for --
@@ -113,11 +114,14 @@ class UnitTests(unittest.TestCase):
         data = self.cur.fetchall()
         self.assertEqual(data,[]) 
         # check for records with geometry at 0,0
-        self.cur.execute("select * from aa_filter_data_addresses_city where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
         data = self.cur.fetchall()
         self.assertEqual(data,[])
     
     def test_merge_oa(self):
+        '''
+        test additional data inserted from temp table when table already exists
+        '''
         # cleanup postgres table
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city;")
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
@@ -135,6 +139,9 @@ class UnitTests(unittest.TestCase):
         self.assertEqual(data[1][2],'115')
     
     def test_merge_oa_first_run(self):
+        '''
+        test with temp table loading with no existing table
+        '''
         # cleanup postgres table
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city;")
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
