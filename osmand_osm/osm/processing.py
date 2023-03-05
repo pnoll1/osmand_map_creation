@@ -255,6 +255,8 @@ def merge_oa(working_area, db_name):
         # insert addresses from temp table if not there, using hash as unique key
         cur.execute('insert into {0} select distinct on (hash) * from {1} on conflict (hash) do nothing'.format(source.table, source.table_temp))
         logging.info(source.table + ' Insert ' + str(cur.rowcount))
+        # get rid of temp table
+        cur.execute('drop table {0}'.format(source.table_temp))
         conn.commit()
     cur.close()
     conn.close()
