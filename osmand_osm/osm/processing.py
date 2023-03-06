@@ -467,6 +467,7 @@ def update_run_all_build(args, area_list):
             logging.error(str(area_list) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details', exc_info = True)
         # move files out of build folder
         run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
+        clean_file_names()
 
 def run_all(area, args):
     '''
@@ -555,7 +556,6 @@ def main(args=None):
             area_list = vars(args)['area_list']
             update_run_all_build(args, area_list)
             logging.info('obfs build stage finished for ' + i)
-    clean_file_names()
     # calculate file hashes
     if args.calculate_hashes:
         for file in Path('../../osmand_obf').iterdir():
