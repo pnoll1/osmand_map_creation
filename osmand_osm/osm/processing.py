@@ -84,7 +84,7 @@ class Source():
     '''
     def __init__(self, path):
         self.path = path
-        self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm'))
+        self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm.pbf'))
         # - is not allowed in postgres
         self.table = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','')
         self.table_temp = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','') + '_temp'
@@ -132,7 +132,7 @@ def pg2osm(source, id_start, working_area, db_name):
     datasource.set_query('select * from \"{0}\"'.format(source.table))
     osmdata = ogr2osm.OsmData(translation_object,start_id=id_start)
     osmdata.process(datasource)
-    datawriter = ogr2osm.OsmDataWriter(source.path_osm)
+    datawriter = ogr2osm.PbfDataWriter(source.path_osm)
 
     try:
         osmdata.output(datawriter)

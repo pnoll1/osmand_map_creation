@@ -217,9 +217,11 @@ class UnitTests(unittest.TestCase):
         id = 2**34
         processing.output_osm(working_area, id, db_name)
         # check output files have ids different and descending
+        run('osmium cat --no-progress -f osm aa/output-osm-ids_addresses.osm.pbf > aa/output-osm-ids_addresses.osm', shell=True)
         with open('aa/output-osm-ids_addresses.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, '17179869183', 'osm id did not start at right location')
+        run('osmium cat --no-progress -f osm aa/output-osm-ids2_addresses.osm.pbf > aa/output-osm-ids2_addresses.osm', shell=True)
         with open('aa/output-osm-ids2_addresses.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, '17179869182', 'osm id did not decrease in second file')
@@ -239,6 +241,7 @@ class UnitTests(unittest.TestCase):
         db_name = 'gis'
         id = 2**34
         processing.output_osm(working_area, id, db_name)
+        run('osmium cat --no-progress -f osm aa/output-osm-addresses-city_addresses.osm.pbf > aa/output-osm-addresses-city_addresses.osm', shell=True)
         with open('aa/output-osm-addresses-city_addresses.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, 'Di Mario Dr')
