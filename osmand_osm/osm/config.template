@@ -12,6 +12,9 @@ batches = []
 # states above ~200MB can crash osmand map generator, slice into smaller regions before processing
 slice_config = {}
 slice_config['au'] = [['north', '95.888672,-8.00000,163.081055,-30.372875'],['southwest', '95.888672,-30.372875,140,-  51.672555'],['southeast','140,-51.672555,163.081055,-30.372875']]
+slice_config['fr'] = [['northwest', '-5.5,48.4,3.4,51.5'],['centralwest', '3.4,48.4,-5.5,46'],\
+	['southwest','3.4,46,-5,42.3'],['southeast','3.4,45,9,42.5'],\
+	['centraleast','3.4,45,9,47'],['northeast','3.4,47,8.5,51']]
 slice_config['mx'] = [['north', '-122.585449,22.512557,-80.288097,33.578015'],['central', '-122.585449,22.512557,-95.  845,7.559'],['south', '-95.845,7.559,-85,24']]
 slice_config['us:co'] = [['north', '-109.11,39.13,-102.05,41.00'], ['south', '-109.11,39.13,-102.04,36.99']]
 slice_config['us:fl'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '-79.508,24.237,-82.579,27.079']]
