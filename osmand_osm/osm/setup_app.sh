@@ -11,7 +11,7 @@ adduser --disabled-password --gecos "User" pat
 mkdir /home/pat/projects
 cd /home/pat/projects
 # Install dependencies
-sudo apt-get install -y curl osmium-tool postgresql postgis gdal-bin wget git python3-pip unzip openjdk-11-jdk
+sudo apt-get install -y curl osmium-tool postgresql postgis gdal-bin wget git python3-pip unzip openjdk-11-jdk python3-protobuf
 sudo pip3 install ogr2osm psycopg2-binary
 # download source since switch to OA
 sudo git clone https://github.com/pnoll1/osmand_map_creation.git --shallow-since='2020-08-25 22:00 -0700'
