@@ -13,7 +13,7 @@ Files posted around the 26th every month
 ## How
 Data is added from OpenAddresses. OpenAddresses collates hundreds of millions of addresses from government sources and uses the normal abbreviated address format.
 ## Where
-OSMAnd Files: North America(but slowly expanding)  
+OSMAnd Files: AU, BE, CA, FR, MX, US
 Script: Worldwide depending on [GeoFabrik](https://download.geofabrik.de) and [OpenAddresses](https://openaddresses.io/) data availability
 # Usage
 ## Getting the map files
