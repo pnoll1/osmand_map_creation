@@ -13,7 +13,7 @@ Files posted around the 26th every month
 ## How
 Data is added from OpenAddresses. OpenAddresses collates hundreds of millions of addresses from government sources and uses the normal abbreviated address format.
 ## Where
-OSMAnd Files: AU, BE, CA, FR, MX, US
+OSMAnd Files: AU, BE, CA, FR, MX, US  
 Script: Worldwide depending on [GeoFabrik](https://download.geofabrik.de) and [OpenAddresses](https://openaddresses.io/) data availability
 # Usage
 ## Getting the map files
@@ -41,11 +41,10 @@ OA data is loaded into Postgresql, filtered with sql, exported to osm xml format
 Contributors welcome! It's recommended to open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the idea first. See docs/development.md.
 
 ## Building a new area
-If there's an area you want added, please open an [issue](https://github.com/pnoll1/osmand_map_creation/issues) with the area request label. Any area that has OpenAddresses coverage is welcome.
+If there's an area you want added, please open an [issue](https://github.com/pnoll1/osmand_map_creation/issues/new?assignees=pnoll1&labels=Area+Request&template=area-request.md&title=) Any area that has OpenAddresses coverage is welcome.
 
-## Other
-Open an [issue](https://github.com/pnoll1/osmand_map_creation/issues).
-
+## Problems, Bug reports
+Open an [issue](https://github.com/pnoll1/osmand_map_creation/issues/new?assignees=pnoll1&labels=bug&template=bug_report.md&title=). 
 # License
 Map Files:[ODBL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)  
 Code: GPLv3
