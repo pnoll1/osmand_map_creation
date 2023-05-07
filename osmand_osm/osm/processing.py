@@ -131,7 +131,9 @@ def pg2osm(source, id_start, working_area, db_name):
     datasource.open_datasource("PG:dbname={0}".format(db_name))
     datasource.set_query('select * from \"{0}\"'.format(source.table))
     osmdata = ogr2osm.OsmData(translation_object,start_id=id_start)
+    logging.debug('ogr2osm process')
     osmdata.process(datasource)
+    logging.debug('ogr2osm writing')
     datawriter = ogr2osm.PbfDataWriter(source.path_osm)
 
     try:
