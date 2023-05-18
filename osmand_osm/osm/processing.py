@@ -252,10 +252,10 @@ def merge_oa(working_area, db_name):
     for source in working_area.master_list:
         # create table for first run
         cur.execute("create table if not exists {0} as table {1} with no data".format(source.table, source.table_temp))
-        # set hash to unique
-        cur.execute("alter table {0} add unique (hash)".format(source.table))
-        # insert addresses from temp table if not there, using hash as unique key
-        cur.execute('insert into {0} select distinct on (hash) * from {1} on conflict (hash) do nothing'.format(source.table, source.table_temp))
+        # create index for deduping
+        cur.execute("create unique index if not exists index on {0} (number, street, wkb_geometry)".format(source.table))
+        # insert addresses from temp table if not there, using index to autodetect dupes
+        cur.execute('insert into {0} select * from {1} on conflict do nothing'.format(source.table, source.table_temp))
         logging.info(source.table + ' Insert ' + str(cur.rowcount))
         # get rid of temp table
         cur.execute('drop table {0}'.format(source.table_temp))
