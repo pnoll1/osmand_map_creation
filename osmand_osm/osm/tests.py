@@ -133,8 +133,9 @@ class UnitTests(unittest.TestCase):
         # create temp table
         self.cur.execute("create table aa_merge_oa_addresses_city_temp (ogc_fid integer NOT NULL, \
                 id character varying, number character varying, street character varying, \
-                city character varying, district character varying, region character varying, \
-                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+                unit character varying, city character varying, district character varying, \
+                region character varying, postcode character varying, hash character varying, \
+                wkb_geometry public.geometry(Point, 4326));")
         self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
                 values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
                 , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
@@ -151,8 +152,10 @@ class UnitTests(unittest.TestCase):
         # create table
         self.cur.execute("create table aa_merge_oa_addresses_city (ogc_fid integer NOT NULL, \
                 id character varying, number character varying, street character varying, \
-                city character varying, district character varying, region character varying, \
-                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+                unit character varying, city character varying, district character varying, \
+                region character varying, postcode character varying, hash character varying, \
+                wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute('alter table aa_merge_oa_addresses_city add constraint aa_merge_oa_addresses_city_unique unique nulls not distinct (number, street, unit, wkb_geometry)')
         self.cur.execute("insert into aa_merge_oa_addresses_city (ogc_fid, number, street, postcode, hash, wkb_geometry) \
                 values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
                 , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
@@ -164,9 +167,9 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
-        self.assertIn((3, None, '115', 'NW 41st ST', None, None, None, '98107', '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
-        self.assertIn((4, None, '119', 'NW 41st ST', None, None, None, '98107', 'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
-        self.assertIn((5, None, '71', 'Linwood Ave', None, None, None, '02907', 'e1262d57e0077c2e', '0101000020E6100000430F6BE0FDDB51C0224212AC60E74440'), data)
+        self.assertIn((3, None, '115', 'NW 41st ST', None, None, None, None, '98107', '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
+        self.assertIn((4, None, '119', 'NW 41st ST', None, None, None, None, '98107', 'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
+        self.assertIn((5, None, '71', 'Linwood Ave', None, None, None, None, '02907', 'e1262d57e0077c2e', '0101000020E6100000430F6BE0FDDB51C0224212AC60E74440'), data)
         count = 0
         for address in data:
             if address[2] == '71':
