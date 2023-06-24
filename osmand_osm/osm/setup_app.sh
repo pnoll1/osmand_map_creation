@@ -35,6 +35,8 @@ sudo -u postgres psql -d gis -c "create extension postgis;"
 sudo -u postgres psql -d gis -c "create user pat with password 'password';"
 # give user own schema where tables will be created
 sudo -u postgres psql -d gis -c "create schema authorization pat"
+# backwards compatibility for unit tests
+sudo -u postgres psql -d gis -c "grant all on schema public to pat"
 # Download Geofabrik index to same folder as script
 cd $install_dir/osmand_osm/osm
 wget -O geofabrik_index-v1.json https://download.geofabrik.de/index-v1.json
