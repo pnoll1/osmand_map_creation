@@ -7,7 +7,9 @@ from pathlib import Path
 import psycopg2
 import processing
 
-logging.basicConfig(filename='processing_test_{0}.log'.format(datetime.datetime.today().isoformat()), level='DEBUG', format='%(asctime)s %(name)s %(levelname)s %(message)s')
+time_current = datetime.datetime.today().isoformat()
+log_filename = f'processing_test_{time_current}'
+logging.basicConfig(filename=log_filename, level='DEBUG', format='%(asctime)s %(name)s %(levelname)s %(message)s')
 
 # setup object to hold parser args
 args = types.SimpleNamespace()
@@ -310,6 +312,7 @@ class IntegrationTests(unittest.TestCase):
 
     def tearDown(self):
         run(['mv', '-f', 'config.bak', 'config.py'])
+        run(['mv', '../us_ri.osm.pbf', './us_ri_test.osm.pbf'])
 
     def test_failure(self):
         '''
@@ -322,6 +325,9 @@ class IntegrationTests(unittest.TestCase):
         '''
         args.area_list = ['us:ri']
         processing.main(args)
+        with open(log_filename) as log_file:
+            file_text = log_file.read()
+            self.assertNotRegex(file_text, 'ERROR')
 
 class BuildTests(unittest.TestCase):
     '''
