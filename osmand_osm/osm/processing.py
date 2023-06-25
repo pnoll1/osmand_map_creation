@@ -221,6 +221,9 @@ def filter_data(working_area, db_name):
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
         else:
             logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
+        # delete records with nothing in street field
+        cur.execute("DELETE from \"{0}\" where street='' or street is null".format(source.table_temp))
+        logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' street empty or null')
        # delete record with illegal unicode chars in number field
         cur.execute("delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table_temp, number_field))
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in number')
