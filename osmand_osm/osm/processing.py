@@ -112,7 +112,7 @@ def pg2osm(source, id_start, working_area, db_name):
     '''
     def oa_quality_check(source):
         try:
-            stats = run('osmium fileinfo --no-progress -ej {0}'.format(source.path_osm), shell=True, capture_output=True, check=True, encoding='utf8')
+            stats = run(f'osmium fileinfo --no-progress -ej {source.path_osm}', shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
             logging.warning('pg2osm fileinfo failure in {0}: '.format(source.table) + error.stderr)
         # handle files with hashes only
@@ -128,8 +128,8 @@ def pg2osm(source, id_start, working_area, db_name):
     ogr2osmlogger.addHandler(logging.StreamHandler())
     translation_object = addr_oa.OaTranslation()
     datasource = ogr2osm.OgrDatasource(translation_object)
-    datasource.open_datasource("PG:dbname={0}".format(db_name))
-    datasource.set_query('select * from \"{0}\"'.format(source.table))
+    datasource.open_datasource(f"PG:dbname={db_name}")
+    datasource.set_query(f'select * from \"{source.table}\"')
     osmdata = ogr2osm.OsmData(translation_object,start_id=id_start)
     logging.debug('ogr2osm process')
     osmdata.process(datasource)
@@ -182,15 +182,15 @@ def load_oa(working_area, db_name):
     logging.info(working_area.name + ' load oa started')
     for source in working_area.master_list:
         logging.debug('Loading: ' + source.path.as_posix())
-        conn = psycopg2.connect('dbname={0}'.format(db_name))
+        conn = psycopg2.connect(f'dbname={db_name}')
         cur = conn.cursor()
         # ogr2ogr errors out if index exists
-        cur.execute('drop index if exists {0}_wkb_geometry_geom_idx'.format(source.table_temp))
+        cur.execute(f'drop index if exists {source.table_temp}_wkb_geometry_geom_idx')
         conn.commit()
         cur.close()
         conn.close()
         try:
-            run('ogr2ogr PG:dbname={0} {1} -nln {2} -overwrite -lco OVERWRITE=YES'.format(db_name, source.path, source.table_temp), shell=True, capture_output=True, check=True, encoding='utf8')
+            run(f'ogr2ogr PG:dbname={db_name} {source.path} -nln {source.table_temp} -overwrite -lco OVERWRITE=YES', shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
             logging.warning(working_area.name + ' ' + error.stderr)
     logging.info(working_area.name + ' ' + 'Load Finished')
@@ -202,45 +202,45 @@ def filter_data(working_area, db_name):
     output: none
     '''
     number_field = 'number'
-    conn = psycopg2.connect('dbname={0}'.format(db_name))
+    conn = psycopg2.connect(f'dbname={db_name}')
     cur = conn.cursor()
     for source in working_area.master_list:
         logging.info('filtering {0}'.format(source.table_temp))
         # find type of number field
-        cur.execute('select pg_typeof({0}) from \"{1}\"limit 1;'.format(number_field, source.table_temp))
+        cur.execute(f'select pg_typeof({number_field}) from \"{source.table_temp}\"limit 1;')
         number_type = cur.fetchone()[0]
         # delete records with no or bad number field data
         if 'character' in number_type:
-            cur.execute("DELETE from \"{0}\" where {1}='' or {1} is null or {1}='0'".format(source.table_temp, number_field))
+            cur.execute(f"DELETE from \"{source.table_temp}\" where {number_field}='' or {number_field} is null or {number_field}='0'")
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
             # us_wa_snohomish county
-            cur.execute("DELETE from \"{0}\" where {1}='UNKNOWN'".format(source.table_temp, number_field))
+            cur.execute(f"DELETE from \"{source.table_temp}\" where {number_field}='UNKNOWN'")
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' UNKNOWN')
         elif 'integer' in number_type or 'numeric' in number_type:
-            cur.execute("DELETE from \"{0}\" where {1} is null or {1}=0".format(source.table_temp, number_field))
+            cur.execute(f"DELETE from \"{source.table_temp}\" where {number_field} is null or {number_field}=0")
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' empty or null')
         else:
             logging.error('Number field in {0} is not character, integer or numeric'.format(source.table))
         # delete records with nothing in street field
-        cur.execute("DELETE from \"{0}\" where street='' or street is null".format(source.table_temp))
+        cur.execute(f"DELETE from \"{source.table_temp}\" where street='' or street is null")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' street empty or null')
        # delete record with illegal unicode chars in number field
-        cur.execute("delete from \"{0}\" where {1} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table_temp, number_field))
+        cur.execute(f"delete from \"{source.table_temp}\" where {number_field} ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in number')
        # delete record with illegal unicode chars in street field
-        cur.execute("delete from \"{0}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';".format(source.table_temp))
+        cur.execute(f"delete from \"{source.table_temp}\" where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' illegal xml in street')
         # delete records with -- in nubmer field eg rancho cucamonga
-        cur.execute("DELETE from \"{0}\" where {1}='--'".format(source.table_temp, number_field))
+        cur.execute(f"DELETE from \"{source.table_temp}\" where {number_field}='--'")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' --')
         # delete records where number=SN eg MX countrywide
-        cur.execute("delete from \"{0}\" where {1}='SN'".format(source.table_temp, number_field))
+        cur.execute(f"delete from \"{source.table_temp}\" where {number_field}='SN'")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' SN')
         # delete records without geometry
-        cur.execute("delete from \"{0}\" where wkb_geometry is null".format(source.table_temp))
+        cur.execute(f"delete from \"{source.table_temp}\" where wkb_geometry is null")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' missing geometry')
         # delete records located at 0,0
-        cur.execute("delete from \"{0}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';".format(source.table_temp))
+        cur.execute(f"delete from \"{source.table_temp}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';")
         logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
         conn.commit()
     cur.close()
@@ -250,22 +250,22 @@ def merge_oa(working_area, db_name):
     '''
     action: insert data from temp table if not present in table based on hash
     '''
-    conn = psycopg2.connect('dbname={0}'.format(db_name))
+    conn = psycopg2.connect(f'dbname={db_name}')
     cur = conn.cursor()
     for source in working_area.master_list:
         # create table for first run
-        cur.execute("create table if not exists {0} as table {1} with no data".format(source.table, source.table_temp))
+        cur.execute(f"create table if not exists {source.table} as table {source.table_temp} with no data")
         conn.commit()
         # create unique constraint for deduping
         try:
-            cur.execute('alter table {0} add constraint {0}_unique unique nulls not distinct (number, street, unit, wkb_geometry)'.format(source.table))
+            cur.execute(f'alter table {source.table} add constraint {source.table}_unique unique nulls not distinct (number, street, unit, wkb_geometry)')
         except:
             conn.rollback()
         # insert addresses from temp table if not there, using index to autodetect dupes
-        cur.execute('insert into {0} select * from {1} on conflict do nothing'.format(source.table, source.table_temp))
+        cur.execute(f'insert into {source.table} select * from {source.table_temp} on conflict do nothing')
         logging.info(source.table + ' Insert ' + str(cur.rowcount))
         # get rid of temp table
-        cur.execute('drop table {0}'.format(source.table_temp))
+        cur.execute(f'drop table {source.table_temp}')
         conn.commit()
     cur.close()
     conn.close()
@@ -284,7 +284,7 @@ def output_osm(working_area, id, db_name):
             logging.info('writing osm file for ' + source.path.as_posix())
             id = pg2osm(source, id, working_area, db_name)
             # osmium sort runs everything in memory, may want to use osmosis instead
-            run('osmium sort --no-progress --overwrite {0} -o {0}'.format(source.path_osm), shell=True, encoding='utf8')
+            run(f'osmium sort --no-progress --overwrite {source.path_osm} -o {source.path_osm}', shell=True, encoding='utf8')
         except CalledProcessError as error:
             logging.warning(source.path.as_posix() + ' staged for removal due to fileinfo failure')
             removal_list.append(source)
@@ -302,16 +302,16 @@ def update_osm(working_area, url):
     action: downloads osm extract to corresponding folder
     output: none
     '''
-    run('curl --output {0}/{1}-latest.osm.pbf {2}'.format(working_area.directory, working_area.short_name, url), shell=True, capture_output=True, encoding='utf8')
-    run('curl --output {0}/{1}-latest.osm.pbf.md5 {2}.md5'.format(working_area.directory, working_area.short_name, url), shell=True, capture_output=True, encoding='utf8')
+    run(f'curl --output {working_area.directory}/{working_area.short_name}-latest.osm.pbf {url}', shell=True, capture_output=True, encoding='utf8')
+    run(f'curl --output {working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5 {url}.md5', shell=True, capture_output=True, encoding='utf8')
     # filename in md5 file doesn't match downloaded name
     # pull md5 hash from file
-    with open('{0}/{1}-latest.osm.pbf.md5'.format(working_area.directory, working_area.short_name)) as md5:
+    with open(f'{working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5') as md5:
         md5 = md5.read()
         md5 = md5.split(' ')[0]
     # check md5 from file with correct filename
     try:
-        run('echo {0} {1}/{2}-latest.osm.pbf.md5 | md5sum -c'.format(md5, working_area.directory, working_area.short_name), shell=True, capture_output=True, encoding='utf8')
+        run(f'echo {md5} {working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5 | md5sum -c', shell=True, capture_output=True, encoding='utf8')
     except Exception as e:
         logging.error('md5 check failed for ' + working_area.name)
         raise e 
@@ -328,7 +328,7 @@ def merge(working_area):
         source_list_string = source_list_string + ' ' + source.path_osm.as_posix()
     source_list_string = source_list_string.lstrip(' ')
     try:
-        merge_command = 'osmium merge --no-progress -Of pbf {0} {1}/{2}-latest.osm.pbf -o {1}/{3}.osm.pbf'.format(source_list_string, working_area.directory, working_area.short_name, working_area.name_underscore)
+        merge_command = f'osmium merge --no-progress -Of pbf {source_list_string} {working_area.directory}/{working_area.short_name}-latest.osm.pbf -o {working_area.directory}/{working_area.name_underscore}.osm.pbf'
         logging.debug(working_area.name + ' merge command: ' + merge_command)
         run(merge_command, shell=True, capture_output=True, check=True, encoding='utf8')
     except Exception as e:
@@ -344,21 +344,21 @@ def prep_for_qa(working_area):
     '''
     # get data for last source ran
     try:
-        stats = run('osmium fileinfo --no-progress -ej {0}'.format(working_area.master_list[-1].path_osm), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats = run(f'osmium fileinfo --no-progress -ej {working_area.master_list[-1].path_osm}', shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         logging.error(working_area.master_list[-1].path_osm + 'fileinfo error for last source ran: ' + e)
         ready_to_move=False
         raise
     # get data for OSM extract
     try:
-        stats_area = run('osmium fileinfo --no-progress -ej {0}/{1}-latest.osm.pbf'.format(working_area.directory, working_area.short_name), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_area = run(f'osmium fileinfo --no-progress -ej {working_area.directory}/{working_area.short_name}-latest.osm.pbf', shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         logging.error(working_area.short_name + ' fileinfo error in osm extract: ' + e)
         ready_to_move=False
         raise
     # get data for completed state file
     try:
-        stats_final = run('osmium fileinfo --no-progress -ej {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), shell=True, capture_output=True ,check=True , encoding='utf8')
+        stats_final = run(f'osmium fileinfo --no-progress -ej {working_area.directory}/{working_area.name_underscore}.osm.pbf', shell=True, capture_output=True ,check=True , encoding='utf8')
     except Exception as e:
         logging.error(working_area.name_underscore + ' fileinfo error in completed file: ' + e)
         ready_to_move=False
@@ -391,10 +391,10 @@ def move(working_area, ready_to_move, pbf_output, sliced_area=None):
     if sliced_area is not None and ready_to_move:
         for slice_config in sliced_area:
             slice_name = slice_config[0]
-            run(['mv','{0}/{1}_{2}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name), pbf_output])
+            run(['mv',f'{working_area.directory}/{working_area.name_underscore}_{slice_name}.osm.pbf', pbf_output])
     # move all other files
     elif ready_to_move:
-        run(['mv','{0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore), pbf_output])
+        run(['mv',f'{working_area.directory}/{working_area.name_underscore}.osm.pbf', pbf_output])
 
 def slice(working_area, config):
     '''
@@ -409,7 +409,7 @@ def slice(working_area, config):
             bounding_box = slice_config[1]
             logging.info(slice_name + ' slicing')
             try:
-                run('osmium extract -O -b {3} -o {0}/{2}.osm.pbf {0}/{1}.osm.pbf'.format(working_area.directory, working_area.name_underscore, slice_name, bounding_box), shell=True, capture_output=True, check=True,encoding='utf8')
+                run(f'osmium extract -O -b {bounding_box} -o {working_area.directory}/{slice_name}.osm.pbf {working_area.directory}/{working_area.name_underscore}.osm.pbf', shell=True, capture_output=True, check=True,encoding='utf8')
             except CalledProcessError as e:
                 logging.error(working_area.name + ' osmium extract error' + e.stderr)
         sliced_state = config[working_area.name]
@@ -471,7 +471,7 @@ def update_run_all_build(args, area_list):
     if args.build:
         logging.info('Builds started')
         try:
-            run('cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{0} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml'.format(Xmx), shell=True, capture_output=True, check=True,encoding='utf8')
+            run(f'cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{Xmx} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml', shell=True, capture_output=True, check=True,encoding='utf8')
         except CalledProcessError as error:
             logging.error(str(area_list) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details', exc_info = True)
         # move files out of build folder
@@ -530,7 +530,7 @@ def main(args=None):
     driven and sends areas to other function for processing. When done, file names are cleaned and
     checksums created
     '''
-    logging.basicConfig(filename='processing_{0}.log'.format(datetime.datetime.today().isoformat()), level=log_level.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
+    logging.basicConfig(filename=f'processing_{datetime.datetime.today().isoformat()}.log', level=log_level.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
     # commandline argument setup
     parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
     parser.add_argument('area_list', nargs='*', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')
