@@ -102,7 +102,10 @@ def update_oa(token):
     output: none
     '''
     run(['wget', '--backups=1', '--header', 'Authorization: Bearer ' + token, 'https://batch.openaddresses.io/api/collections/1/data'])
-    run(['unzip', '-o', 'data'])
+
+def decompress_oa(working_area):
+    run(['unzip', '-o', 'data',working_area.directory.as_posix() + '/*'])
+
 
 def pg2osm(source, id_start, working_area, db_name):
     '''
@@ -193,6 +196,7 @@ def load_oa(working_area, db_name):
             run(f'ogr2ogr PG:dbname={db_name} {source.path} -nln {source.table_temp} -overwrite -lco OVERWRITE=YES', shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
             logging.warning(working_area.name + ' ' + error.stderr)
+        run(['rm', source.path.as_posix()])
     logging.info(working_area.name + ' ' + 'Load Finished')
 
 def filter_data(working_area, db_name):
@@ -487,8 +491,9 @@ def run_all(area, args):
     pbf_output = root.parent
     working_area = WorkingArea(area)
     logging.debug(working_area)
-    create_master_list(working_area)
     if args.load_oa:
+        decompress_oa(working_area)
+        create_master_list(working_area)
         load_oa(working_area, db_name)
     if args.filter_data:
         filter_data(working_area, db_name)
