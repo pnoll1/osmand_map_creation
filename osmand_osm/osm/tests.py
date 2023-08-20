@@ -4,7 +4,7 @@ import types
 import logging
 import datetime
 from pathlib import Path
-import psycopg2
+import psycopg as psycopg2
 import processing
 
 time_current = datetime.datetime.today().isoformat()

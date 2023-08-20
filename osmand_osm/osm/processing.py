@@ -15,7 +15,7 @@ from multiprocessing import Pool
 import hashlib
 import logging
 import datetime
-import psycopg2
+import psycopg as psycopg2
 import ogr2osm
 import addr_oa
 # config options

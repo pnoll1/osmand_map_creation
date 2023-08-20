@@ -11,8 +11,7 @@ adduser --disabled-password --gecos "User" pat
 mkdir /home/pat/projects
 cd /home/pat/projects
 # Install dependencies
-sudo apt-get install -y curl osmium-tool postgresql postgis gdal-bin wget git python3-pip unzip openjdk-11-jdk python3-protobuf
-sudo pip3 install ogr2osm psycopg2-binary
+sudo apt-get install -y curl osmium-tool postgresql postgis gdal-bin wget git python3-pip unzip openjdk-11-jdk python3-protobuf python3-psycopg python3-venv
 # download source since switch to OA
 sudo git clone https://github.com/pnoll1/osmand_map_creation.git --shallow-since='2020-08-25 22:00 -0700'
 install_dir=/home/pat/projects/osmand_map_creation
@@ -39,6 +38,8 @@ sudo -u postgres psql -d gis -c "create schema authorization pat"
 sudo -u postgres psql -d gis -c "grant all on schema public to pat"
 # Download Geofabrik index to same folder as script
 cd $install_dir/osmand_osm/osm
+python3 -m venv --system-site-packages env
+env/bin/pip install ogr2osm
 wget -O geofabrik_index-v1.json https://download.geofabrik.de/index-v1.json
 touch secrets.py
 echo "add OA token obtained from OA website in secrets.py as oa_token = 'token_data'"
