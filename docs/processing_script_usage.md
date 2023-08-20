@@ -12,7 +12,7 @@ config usage:
 - edit config.py 
   - fill in batches e.g. ['--update-oa', '--normal us:wa us:or us:id']
   - fill in Xmx with max amount of memory you can give (Extra ram will speed up builds)
-- ./processing.py
+- env/bin/python processing.py
 
 # Data Processing
 Add sql statements in the filter_data function to remove unwanted records  
