@@ -286,17 +286,9 @@ class IntegrationTests(unittest.TestCase):
         args.slice = False
         args.build = False
         args.calculate_hashes = False
-        # replace config with template so only test area runs
-        run(['mv', 'config.py', 'config.bak'])
-        run(['cp', 'config.template', 'config.py'])
 
     def tearDown(self):
-        run(['mv', '-f', 'config.bak', 'config.py'])
         run(['mv', '../us_ri.osm.pbf', './us_ri_test.osm.pbf'])
-
-    def test_failure(self):
-        '''
-        '''
 
     def test_success(self):
         '''

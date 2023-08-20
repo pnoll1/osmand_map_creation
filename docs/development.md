@@ -18,7 +18,7 @@ The process is:
     1. file hashes calculated
 
 # Contributing
-It's recommended to open an issue with the idea first. Download setup.sh and setup_container.sh.
+It's recommended to open an issue with the idea first. Download setup_app.sh and setup_container.sh.
 
     ./setup_container.sh 
     lxc-start osmand_map_creation
@@ -28,7 +28,7 @@ It's recommended to open an issue with the idea first. Download setup.sh and set
 Try running unit tests to make sure everything is working. Start your own feature branch to make changes. Make a PR on Github when you've got your changes working.
 
 # Testing
-Project uses unittest for testing. In the osm directory, run python3 -m unittest tests.py to run tests. Run unit tests only with python3 -m unittest tests.UnitTests. The config file must have batches set to an empty list for integration tests to run.
+Project uses unittest for testing. In the osm directory, run python3 -m unittest tests.py to run tests. Run unit tests only with python3 -m unittest tests.UnitTests.
 
 ## Unit Tests
 Test data is stored in aa and ab folders. Find a test case for your change and insert into corresponding geojson file. Use processing.py --load-oa aa(or ab depending on change) to load data into postgres. Use pg_dump -d gis -t tablename > filename.sql to replace current sql file. Add your test to tests.py.

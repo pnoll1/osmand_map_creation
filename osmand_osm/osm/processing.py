@@ -553,24 +553,23 @@ def main(args=None):
     parser.add_argument('--calculate-hashes', action='store_true', help='creates hashes for obf files')
     parser.add_argument('--processes', type=int, nargs='?', default=2, help='number of processes to use, min=1(best for large areas that need ram), max=number of physical processors(best for small areas)')
     parser.add_argument('--all', action='store_true', help='use all options')
-    if len(batches) == 0:
-        # allows calling from module
-        if not args:
-            args = parser.parse_args()
-        parse_meta_commands(args)
-        area_list = vars(args)['area_list']
-        update_run_all_build(args, area_list)
-    # use commands from config file if present
-    if len(batches) > 0:
-        for i in batches:
-            j = i.split(' ')
-            args = parser.parse_args(j)
+    # allows calling from module
+    if not args:
+        args = parser.parse_args()
+    parse_meta_commands(args)
+    area_list = vars(args)['area_list']
+    update_run_all_build(args, area_list)
+    # use commands from config file if command line doesn't have them
+    if len(batches) > 0 and not area_list:
+        for batch_string in batches:
+            batch_list = batch_string.split(' ')
+            args = parser.parse_args(batch_list)
             parse_meta_commands(args)
             logging.debug(args)
             area_list = vars(args)['area_list']
             update_run_all_build(args, area_list)
-            logging.info('obfs build stage finished for ' + i)
-    # calculate file hashes
+            logging.info('obfs build stage finished for ' + batch_string)
+    # calculate obf file hashes
     if args.calculate_hashes:
         for file in Path('../../osmand_obf').iterdir():
             if file.suffix == '.obf':
