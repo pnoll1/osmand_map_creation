@@ -558,7 +558,10 @@ def main(args=None):
         args = parser.parse_args()
     parse_meta_commands(args)
     area_list = vars(args)['area_list']
-    update_run_all_build(args, area_list)
+    # run commands from cli
+    if args:
+        logging.debug('run from cli')
+        update_run_all_build(args, area_list)
     # use commands from config file if command line doesn't have them
     if len(batches) > 0 and not area_list:
         for batch_string in batches:
