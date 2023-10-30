@@ -184,7 +184,7 @@ def load_oa(working_area, db_name):
     '''
     logging.info(working_area.name + ' load oa started')
     for source in working_area.master_list:
-        logging.debug('Loading: ' + source.path.as_posix())
+        logging.debug(source.path.as_posix() + 'loading' )
         conn = psycopg2.connect(f'dbname={db_name}')
         cur = conn.cursor()
         # ogr2ogr errors out if index exists
@@ -285,7 +285,7 @@ def output_osm(working_area, id, db_name):
         # catch error and log file for removal from master list
         # sql join then output once quicker?
         try:
-            logging.info('writing osm file for ' + source.path.as_posix())
+            logging.info(source.path.as_posix() + 'writing osm file')
             id = pg2osm(source, id, working_area, db_name)
             # osmium sort runs everything in memory, may want to use osmosis instead
             run(f'osmium sort --no-progress --overwrite {source.path_osm} -o {source.path_osm}', shell=True, encoding='utf8')
@@ -299,6 +299,7 @@ def output_osm(working_area, id, db_name):
     # remove file from file list so merge will work
     for source in removal_list:
         working_area.master_list.remove(source)
+    logging.info(working_area.name + 'finished writing address files'
 
 def update_osm(working_area, url):
     '''
@@ -306,6 +307,7 @@ def update_osm(working_area, url):
     action: downloads osm extract to corresponding folder
     output: none
     '''
+    logging.info(working_area.name + 'updating OSM data')
     run(f'curl --output {working_area.directory}/{working_area.short_name}-latest.osm.pbf {url}', shell=True, capture_output=True, encoding='utf8')
     run(f'curl --output {working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5 {url}.md5', shell=True, capture_output=True, encoding='utf8')
     # filename in md5 file doesn't match downloaded name
@@ -346,6 +348,7 @@ def prep_for_qa(working_area):
     input: working_area object
     output: stats for last source ran, area extract and final file
     '''
+    logging.info(working_area.name + 'prep_for_qa started')
     # get data for last source ran
     try:
         stats = run(f'osmium fileinfo --no-progress -ej {working_area.master_list[-1].path_osm}', shell=True, capture_output=True ,check=True , encoding='utf8')
@@ -367,6 +370,7 @@ def prep_for_qa(working_area):
         logging.error(working_area.name_underscore + ' fileinfo error in completed file: ' + e)
         ready_to_move=False
         raise
+    logging.info(working_area.name + 'prep_for_qa finished')
     return stats, stats_area, stats_final
 
 def quality_check(stats, stats_area, stats_final, ready_to_move, working_area):
@@ -374,6 +378,7 @@ def quality_check(stats, stats_area, stats_final, ready_to_move, working_area):
     input: stats for last source ran, state extract, final file and ready_to_move boolean
     output: boolean that is True for no issues or False for issues
     '''
+    logging.info(working_area.name + 'quality check started')
     # file is not empty
     # Check if items have unique ids
     if json.loads(stats_final.stdout)['data']['multiple_versions'] == True:
@@ -383,6 +388,7 @@ def quality_check(stats, stats_area, stats_final, ready_to_move, working_area):
     if json.loads(stats_area.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
         logging.error('ERROR: Added data overlaps with OSM data ' + working_area.name)
         ready_to_move = False
+    logging.info(working_area.name + 'quality check finished')
     return ready_to_move
 
 def move(working_area, ready_to_move, pbf_output, sliced_area=None):
@@ -518,7 +524,6 @@ def run_all(area, args):
     if args.quality_check:
         stats, stats_area, stats_final = prep_for_qa(working_area)
         ready_to_move = quality_check(stats, stats_area, stats_final,ready_to_move, working_area)
-        logging.info('quality check finished for ' + working_area.name)
     if args.slice:
         sliced_area = slice(working_area, slice_config)
         logging.info('slice finished for ' + working_area.name)
