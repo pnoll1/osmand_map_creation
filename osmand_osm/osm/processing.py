@@ -18,37 +18,10 @@ import datetime
 import psycopg as psycopg2
 import ogr2osm
 import addr_oa
+import osm_utils
 # config options
 from config import db_name, id, slice_config, batches, Xmx, log_level
 from secrets import oa_token
-
-# download https://download.geofabrik.de/index-v1.json prior to running
-def geofabrik_lookup(working_area):
-    '''
-    input: working_area object
-    output: geofabrik pbf url
-    '''
-    with open('geofabrik_index-v1.json') as index_file:
-        geofabrik_index = json.load(index_file)
-        area_list = geofabrik_index['features']
-        for i in area_list:
-            # handle countries iso3166-1
-            if working_area.is_3166_2 == False:
-                try:
-                    if i['properties']['iso3166-1:alpha2']==[working_area.name.upper()]:
-                        return i['properties']['urls']['pbf']
-                except:
-                    pass
-            # handle subdivisions iso3166-2
-            elif working_area.is_3166_2:
-                try:
-                    if i['properties']['iso3166-2']==[working_area.country.upper()+'-'+working_area.short_name.upper()]:
-                        return i['properties']['urls']['pbf']
-                except:
-                    pass
-    # could not find matching area
-    url = None
-    return url
 
 class WorkingArea():
     '''
@@ -299,28 +272,7 @@ def output_osm(working_area, id, db_name):
     # remove file from file list so merge will work
     for source in removal_list:
         working_area.master_list.remove(source)
-    logging.info(working_area.name + 'finished writing address files'
-
-def update_osm(working_area, url):
-    '''
-    input: working_area object, geofabrik extract url
-    action: downloads osm extract to corresponding folder
-    output: none
-    '''
-    logging.info(working_area.name + 'updating OSM data')
-    run(f'curl --output {working_area.directory}/{working_area.short_name}-latest.osm.pbf {url}', shell=True, capture_output=True, encoding='utf8')
-    run(f'curl --output {working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5 {url}.md5', shell=True, capture_output=True, encoding='utf8')
-    # filename in md5 file doesn't match downloaded name
-    # pull md5 hash from file
-    with open(f'{working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5') as md5:
-        md5 = md5.read()
-        md5 = md5.split(' ')[0]
-    # check md5 from file with correct filename
-    try:
-        run(f'echo {md5} {working_area.directory}/{working_area.short_name}-latest.osm.pbf.md5 | md5sum -c', shell=True, capture_output=True, encoding='utf8')
-    except Exception as e:
-        logging.error('md5 check failed for ' + working_area.name)
-        raise e 
+    logging.info(working_area.name + 'finished writing address files')
 
 def merge(working_area):
     '''
@@ -508,15 +460,8 @@ def run_all(area, args):
     if args.output_osm:
         output_osm(working_area, id, db_name)
     if args.update_osm:
-        url = geofabrik_lookup(working_area)
-        if url is None:
-            logging.error( working_area.name + 'could not find geofabrik url for ')
-            raise ValueError
-        try:
-            update_osm(working_area, url)
-        except Exception as e:
-            raise e
-        logging.info('osm update finished for ' + working_area.name)
+        osm = osm_utils.Osm(working_area)
+        osm.update_osm(working_area)
     if args.merge:
         merge(working_area)
     # allows running without quality check
