@@ -1,4 +1,5 @@
 from pathlib import Path
+import psycopg as psycopg2
 from subprocess import run, CalledProcessError
 from config import db_name
 
@@ -213,7 +214,7 @@ class WorkingArea():
             # sql join then output once quicker?
             try:
                 logging.info(source.path.as_posix() + 'writing osm file')
-                id = self.pg2osm(self, source, id, db_name)
+                id = pg2osm(self, source, id, db_name)
                 # osmium sort runs everything in memory, may want to use osmosis instead
                 run(f'osmium sort --no-progress --overwrite {source.path_osm} -o {source.path_osm}', shell=True, encoding='utf8')
             except CalledProcessError as error:
