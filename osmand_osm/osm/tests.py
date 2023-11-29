@@ -4,7 +4,8 @@ import types
 import logging
 import datetime
 from pathlib import Path
-import psycopg as psycopg2
+import psycopg2
+import oa
 import processing
 
 time_current = datetime.datetime.today().isoformat()
@@ -34,12 +35,12 @@ class UnitTests(unittest.TestCase):
         currently uses number of entries since checking of exact matches was not working
         '''
         #iso3166-1
-        working_area = processing.WorkingArea('aa')
-        processing.create_master_list(working_area)
+        working_area = oa.WorkingArea('aa')
+        working_area.create_master_list()
         self.assertEqual(4, len(working_area.master_list))
         #iso3166-2
-        working_area = processing.WorkingArea('ab:aa')
-        processing.create_master_list(working_area)
+        working_area = oa.WorkingArea('ab:aa')
+        working_area.create_master_list()
         self.assertEqual(1, len(working_area.master_list))
 
     def test_load_oa(self):
