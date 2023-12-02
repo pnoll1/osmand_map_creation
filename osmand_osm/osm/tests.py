@@ -5,7 +5,7 @@ import logging
 import datetime
 from pathlib import Path
 
-import psycopg as psycopg2
+import psycopg
 
 import oa
 import processing
@@ -23,7 +23,7 @@ class UnitTests(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.conn = psycopg2.connect('dbname=gis')
+        self.conn = psycopg.connect('dbname=gis')
         self.cur = self.conn.cursor()
 
     def tearDown(self):

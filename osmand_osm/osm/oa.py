@@ -7,7 +7,7 @@ from pathlib import Path
 from subprocess import run, CalledProcessError
 
 import ogr2osm
-import psycopg as psycopg2
+import psycopg
 
 import addr_oa
 
@@ -82,7 +82,7 @@ class WorkingArea():
         logging.info(self.name + ' load oa started')
         for source in self.master_list:
             logging.debug(source.path.as_posix() + 'loading' )
-            conn = psycopg2.connect(f'dbname={db_name}')
+            conn = psycopg.connect(f'dbname={db_name}')
             cur = conn.cursor()
             # ogr2ogr errors out if index exists
             cur.execute(f'drop index if exists {source.table_temp}_wkb_geometry_geom_idx')
@@ -103,7 +103,7 @@ class WorkingArea():
         output: none
         '''
         number_field = 'number'
-        conn = psycopg2.connect(f'dbname={db_name}')
+        conn = psycopg.connect(f'dbname={db_name}')
         cur = conn.cursor()
         for source in self.master_list:
             logging.info('filtering {0}'.format(source.table_temp))
@@ -151,7 +151,7 @@ class WorkingArea():
         '''
         action: insert data from temp table if not present in table based on hash
         '''
-        conn = psycopg2.connect(f'dbname={db_name}')
+        conn = psycopg.connect(f'dbname={db_name}')
         cur = conn.cursor()
         for source in self.master_list:
             # create table for first run
