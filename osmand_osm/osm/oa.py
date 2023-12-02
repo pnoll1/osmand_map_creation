@@ -42,7 +42,7 @@ class WorkingArea():
         return 'WorkingArea(' + self.name + ')'
 
     def decompress_oa(self):
-        run(['unzip', '-o', 'data',self.directory.as_posix() + '/*'])
+        run(['unzip', '-qq', '-o', 'data',self.directory.as_posix() + '/*'])
 
     def create_master_list(self):
         '''
