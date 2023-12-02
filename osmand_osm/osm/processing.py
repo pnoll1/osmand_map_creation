@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-import json
-from subprocess import run, CalledProcessError
 from pathlib import Path
 import argparse
 from multiprocessing import Pool
-import hashlib
 import logging
 import datetime
-import psycopg as psycopg2
-import ogr2osm
-import addr_oa
+from secrets import oa_token
+
 import oa
 import obf
 import osm_utils
 # config options
 from config import db_name, id, slice_config, batches, log_level
-from secrets import oa_token
 
 def parse_meta_commands(args):
     '''
@@ -61,7 +56,7 @@ def update_run_all_build(args, area_list):
             area_list_of_tuples.append((i,args))
         p.starmap(run_all, area_list_of_tuples)
     if args.build:
-        obf.build()
+        obf.build(area_list)
 
 def run_all(area, args):
     '''

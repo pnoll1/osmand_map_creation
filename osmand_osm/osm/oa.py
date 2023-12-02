@@ -1,11 +1,15 @@
+'''
+utilities for working with OpenAddresses data and transforming to OSM format
+'''
 import json
 import logging
-import ogr2osm
 from pathlib import Path
-import psycopg as psycopg2
 from subprocess import run, CalledProcessError
+
+import ogr2osm
+import psycopg as psycopg2
+
 import addr_oa
-from config import db_name
 
 class WorkingArea():
     '''
