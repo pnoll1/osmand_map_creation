@@ -33,6 +33,7 @@ class WorkingArea():
         self.master_list = None
         self.obf_name = self.name_underscore.capitalize() + '.obf'
         self.pbf = f'{self.directory}/{self.name_underscore}.osm.pbf'
+        self.pbf_osm = f'{self.directory}/{self.short_name}-latest.osm.pbf'
 
     def __str__(self):
         return str(self.short_name)
@@ -185,7 +186,7 @@ class WorkingArea():
             try:
                 id_end = json.loads(stats.stdout)['data']['minid']['nodes']
                 return id_end
-            except Exception as e:                
+            except Exception:
                 logging.info('Error finding id_end in {0}. File is likely hashes only'.format(source.table))
                 raise
 
@@ -205,7 +206,7 @@ class WorkingArea():
         try:
             osmdata.output(datawriter)
         except CalledProcessError as error:
-            logging.warning('ogr2osm failure in ' + source.table, exc_info = True)
+            logging.warning('ogr2osm failure in ' + source.table + error.stderr)
             raise
         id_end = oa_quality_check(source)
         return id_end
@@ -225,10 +226,10 @@ class WorkingArea():
                 id = self.pg2osm(source, id, db_name)
                 # osmium sort runs everything in memory, may want to use osmosis instead
                 run(f'osmium sort --no-progress --overwrite {source.path_osm} -o {source.path_osm}', shell=True, encoding='utf8')
-            except CalledProcessError as error:
+            except CalledProcessError:
                 logging.warning(source.path.as_posix() + ' staged for removal due to fileinfo failure')
                 removal_list.append(source)
-            except UnboundLocalError as error:
+            except UnboundLocalError:
                 logging.warning(source.path.as_posix() + ' staged for removal due to id_end failure. Likely hashes only')
                 if source not in removal_list:
                     removal_list.append(source)
@@ -249,11 +250,11 @@ class WorkingArea():
             source_list_string = source_list_string + ' ' + source.path_osm.as_posix()
         source_list_string = source_list_string.lstrip(' ')
         try:
-            merge_command = f'osmium merge --no-progress -Of pbf {source_list_string} {self.directory}/{self.short_name}-latest.osm.pbf -o {self.directory}/{self.name_underscore}.osm.pbf'
+            merge_command = f'osmium merge --no-progress -Of pbf {source_list_string} {self.pbf_osm} -o {self.pbf}'
             logging.debug(self.name + ' merge command: ' + merge_command)
             run(merge_command, shell=True, capture_output=True, check=True, encoding='utf8')
-        except Exception as e:
-            logging.error(self.name + ' Merge Failed', exc_info = True)
+        except CalledProcessError as error:
+            logging.error(self.name + ' Merge Failed ' + error.stderr)
             return
         logging.info(self.name + ' Merge Finished')
         return
@@ -261,47 +262,49 @@ class WorkingArea():
     def prep_for_qa(self):
         '''
         input: working_area object
-        output: stats for last source ran, area extract and final file
+        output: stats for last source ran, osm area extract and final file
         '''
         logging.info(self.name + 'prep_for_qa started')
+        def fileinfo(path):
+            return run(f'osmium fileinfo --no-progress -ej {path}', shell=True, capture_output=True ,check=True , encoding='utf8')
         # get data for last source ran
         try:
-            stats = run(f'osmium fileinfo --no-progress -ej {self.master_list[-1].path_osm}', shell=True, capture_output=True ,check=True , encoding='utf8')
-        except Exception as e:
-            logging.error(self.master_list[-1].path_osm + 'fileinfo error for last source ran: ' + e)
+            stats = fileinfo(self.master_list[-1].path_osm)
+        except CalledProcessError as error:
+            logging.error(self.master_list[-1].path_osm + 'fileinfo error for last source ran' + error.stderr)
             ready_to_move=False
             raise
         # get data for OSM extract
         try:
-            stats_area = run(f'osmium fileinfo --no-progress -ej {self.directory}/{self.short_name}-latest.osm.pbf', shell=True, capture_output=True ,check=True , encoding='utf8')
-        except Exception as e:
-            logging.error(self.short_name + ' fileinfo error in osm extract: ' + e)
+            stats_osm = fileinfo(self.pbf_osm)
+        except CalledProcessError as error:
+            logging.error(self.short_name + ' fileinfo error in osm extract: ' + error.stderr)
             ready_to_move=False
             raise
         # get data for completed state file
         try:
-            stats_final = run(f'osmium fileinfo --no-progress -ej {self.directory}/{self.name_underscore}.osm.pbf', shell=True, capture_output=True ,check=True , encoding='utf8')
-        except Exception as e:
-            logging.error(self.name_underscore + ' fileinfo error in completed file: ' + e)
+            stats_final = fileinfo(self.pbf)
+        except CalledProcessError as error:
+            logging.error(self.name_underscore + ' fileinfo error in completed file ' + error.stderr)
             ready_to_move=False
             raise
         logging.info(self.name + 'prep_for_qa finished')
-        return stats, stats_area, stats_final
+        return stats, stats_osm, stats_final
 
     def quality_check(self, ready_to_move):
         '''
-        input: stats for last source ran, state extract, final file and ready_to_move boolean
+        input: ready_to_move boolean
         output: boolean that is True for no issues or False for issues
         '''
         logging.info(self.name + 'quality check started')
-        stats, stats_area, stats_final = self.prep_for_qa()
+        stats, stats_osm, stats_final = self.prep_for_qa()
         # file is not empty
         # Check if items have unique ids
         if json.loads(stats_final.stdout)['data']['multiple_versions'] == True:
             logging.error('ERROR: Multiple items with same id ' + self.name)
             ready_to_move = False
         # Check if added data overlaps with OSM ids
-        if json.loads(stats_area.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
+        if json.loads(stats_osm.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
             logging.error('ERROR: Added data overlaps with OSM data ' + self.name)
             ready_to_move = False
         logging.info(self.name + 'quality check finished')
@@ -335,9 +338,9 @@ class WorkingArea():
                 bounding_box = slice_config[1]
                 logging.info(slice_name + ' slicing')
                 try:
-                    run(f'osmium extract -O -b {bounding_box} -o {self.directory}/{slice_name}.osm.pbf {self.directory}/{self.name_underscore}.osm.pbf', shell=True, capture_output=True, check=True,encoding='utf8')
-                except CalledProcessError as e:
-                    logging.error(self.name + ' osmium extract error' + e.stderr)
+                    run(f'osmium extract -O -b {bounding_box} -o {self.directory}/{slice_name}.osm.pbf {self.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
+                except CalledProcessError as error:
+                    logging.error(self.name + ' osmium extract error ' + error.stderr)
             sliced_state = config[self.name]
             return sliced_state
 
