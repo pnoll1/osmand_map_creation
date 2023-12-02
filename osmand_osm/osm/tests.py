@@ -47,13 +47,13 @@ class UnitTests(unittest.TestCase):
         # cleanup postgres table
         self.cur.execute('drop table if exists aa_load_oa_addresses_city_temp')
         self.conn.commit()
-        working_area = processing.WorkingArea('aa')
-        working_area.master_list = [processing.Source(Path('aa/load-oa-addresses-city.geojson'))]
+        working_area = oa.WorkingArea('aa')
+        working_area.master_list = [oa.Source(Path('aa/load-oa-addresses-city.geojson'))]
         run(['cp', 'aa/load-oa-addresses-city.geojson', 'aa/load-oa-addresses-city.geojson.bak'])
         run(['mv', 'data', 'data.bak'])
         run(['cp', '-n', 'aa/data.zip', 'data'])
-        processing.decompress_oa(working_area)
-        processing.load_oa(working_area, 'gis')
+        working_area.decompress_oa()
+        working_area.load_oa('gis')
         run(['mv', 'aa/load-oa-addresses-city.geojson.bak', 'aa/load-oa-addresses-city.geojson'])
         run(['mv', 'data.bak', 'data'])
         self.cur.execute('select * from aa_load_oa_addresses_city_temp')
@@ -69,9 +69,9 @@ class UnitTests(unittest.TestCase):
         self.conn.commit()
         # load data into postgres
         run('psql -d gis < $PWD/aa/filter_data_addresses_city_temp.sql',shell=True)
-        working_area = processing.WorkingArea('aa')
-        working_area.master_list = [processing.Source(Path('aa/filter-data-addresses-city.geojson'))]
-        processing.filter_data(working_area, 'gis')
+        working_area = oa.WorkingArea('aa')
+        working_area.master_list = [oa.Source(Path('aa/filter-data-addresses-city.geojson'))]
+        working_area.filter_data('gis')
         # check for empty street
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where street='' or street is null")
         data = self.cur.fetchall()
@@ -143,10 +143,10 @@ class UnitTests(unittest.TestCase):
                 values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
                 , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
         self.conn.commit()
-        working_area = processing.WorkingArea('aa')
+        working_area = oa.WorkingArea('aa')
         db_name = 'gis'
-        working_area.master_list = [processing.Source(Path('aa/merge-oa-addresses-city.geojson'))]
-        processing.merge_oa(working_area, db_name)
+        working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        working_area.merge_oa(db_name)
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
@@ -170,10 +170,10 @@ class UnitTests(unittest.TestCase):
         # load data into postgres
         #run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
         run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
-        working_area = processing.WorkingArea('aa')
+        working_area = oa.WorkingArea('aa')
         db_name = 'gis'
-        working_area.master_list = [processing.Source(Path('aa/merge-oa-addresses-city.geojson'))]
-        processing.merge_oa(working_area, db_name)
+        working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        working_area.merge_oa(db_name)
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
@@ -204,12 +204,12 @@ class UnitTests(unittest.TestCase):
                 values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
                 , (3, '1', 'Di Mario Dr', '02904', '908f551defc1295a', 'POINT(-71.4188401 41.8572897)'))
         self.conn.commit()
-        working_area = processing.WorkingArea('aa')
-        working_area.master_list = [processing.Source(Path('aa/output-osm-ids.geojson')) \
-                , processing.Source(Path('aa/output-osm-ids2.geojson'))]
+        working_area = oa.WorkingArea('aa')
+        working_area.master_list = [oa.Source(Path('aa/output-osm-ids.geojson')) \
+                , oa.Source(Path('aa/output-osm-ids2.geojson'))]
         db_name = 'gis'
         id = 2**34
-        processing.output_osm(working_area, id, db_name)
+        working_area.output_osm(id, db_name)
         # check output files have ids different and descending
         run('osmium cat --no-progress -f osm aa/output-osm-ids_addresses.osm.pbf > aa/output-osm-ids_addresses.osm', shell=True)
         with open('aa/output-osm-ids_addresses.osm') as test_file:
@@ -230,11 +230,11 @@ class UnitTests(unittest.TestCase):
         self.conn.commit()
         # load data into postgres
         run('psql -d gis < $PWD/aa/output_osm_addresses_city.sql',shell=True)
-        working_area = processing.WorkingArea('aa')
-        working_area.master_list = [processing.Source(Path('aa/output-osm-addresses-city.geojson'))]
+        working_area = oa.WorkingArea('aa')
+        working_area.master_list = [oa.Source(Path('aa/output-osm-addresses-city.geojson'))]
         db_name = 'gis'
         id = 2**34
-        processing.output_osm(working_area, id, db_name)
+        working_area.output_osm(id, db_name)
         run('osmium cat --no-progress -f osm aa/output-osm-addresses-city_addresses.osm.pbf > aa/output-osm-addresses-city_addresses.osm', shell=True)
         with open('aa/output-osm-addresses-city_addresses.osm') as test_file:
             file_text = test_file.read()
@@ -245,15 +245,15 @@ class UnitTests(unittest.TestCase):
     def test_slice_do_nothing(self):
         slice_config = {}
         slice_config['au'] = [['north', '95.888672,-8.00000,163.081055,-30.372875'],['southwest', '95.888672,-30.372875,140,-51.672555'],['southeast','140,-51.672555,163.081055,-30.372875']]
-        working_area = processing.WorkingArea('aa')
-        sliced_area = processing.slice(working_area, slice_config)
+        working_area = oa.WorkingArea('aa')
+        sliced_area = working_area.slice(slice_config)
         self.assertEqual(sliced_area, None)
 
     def test_slice(self):
         slice_config = {}
         slice_config['aa'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '-79.508,24.237,-82.579,27.079']]
-        working_area = processing.WorkingArea('aa')
-        sliced_area = processing.slice(working_area, slice_config)
+        working_area = oa.WorkingArea('aa')
+        sliced_area = working_area.slice(slice_config)
         # check function output
         self.assertEqual(sliced_area, slice_config['aa'])
         # check file output
