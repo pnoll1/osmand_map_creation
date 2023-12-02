@@ -1,6 +1,10 @@
+import json
+import logging
+import ogr2osm
 from pathlib import Path
 import psycopg as psycopg2
 from subprocess import run, CalledProcessError
+import addr_oa
 from config import db_name
 
 class WorkingArea():
@@ -214,7 +218,7 @@ class WorkingArea():
             # sql join then output once quicker?
             try:
                 logging.info(source.path.as_posix() + 'writing osm file')
-                id = pg2osm(self, source, id, db_name)
+                id = self.pg2osm(source, id, db_name)
                 # osmium sort runs everything in memory, may want to use osmosis instead
                 run(f'osmium sort --no-progress --overwrite {source.path_osm} -o {source.path_osm}', shell=True, encoding='utf8')
             except CalledProcessError as error:
@@ -286,7 +290,7 @@ class WorkingArea():
         output: boolean that is True for no issues or False for issues
         '''
         logging.info(self.name + 'quality check started')
-        stats, stats_area, stats_final = self.prep_for_qa(self)
+        stats, stats_area, stats_final = self.prep_for_qa()
         # file is not empty
         # Check if items have unique ids
         if json.loads(stats_final.stdout)['data']['multiple_versions'] == True:
