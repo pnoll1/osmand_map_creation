@@ -230,7 +230,7 @@ class WorkingArea():
         id_end = oa_quality_check(source)
         return id_end
 
-    def output_osm(self, id, db_name):
+    def output_osm(self, id_start, db_name):
         '''
         input: working_area object, id to start from, root of working path
         action: call pg2osm to write OA data in postgres to osm files, remove failed sources from master list
@@ -242,7 +242,7 @@ class WorkingArea():
             # sql join then output once quicker?
             try:
                 logging.info(source.path.as_posix() + 'writing osm file')
-                id = self.pg2osm(source, id, db_name)
+                id_start = self.pg2osm(source, id_start, db_name)
                 # osmium sort runs everything in memory, may want to use osmosis instead
                 run(f'osmium sort --no-progress --overwrite {source.path_osm} -o {source.path_osm}', shell=True, encoding='utf8')
             except CalledProcessError:

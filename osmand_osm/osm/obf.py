@@ -6,7 +6,7 @@ import logging
 import os
 from pathlib import Path
 from subprocess import run, CalledProcessError
-from config import Xmx
+from config import XMX
 
 def clean_file_names():
     '''
@@ -27,7 +27,7 @@ def build(area_list):
     '''
     logging.info('Builds started')
     try:
-        run(f'cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{Xmx} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml', shell=True, capture_output=True, check=True,encoding='utf8')
+        run(f'cd ../..;java -Djava.util.logging.config.file=logging.properties -Xms64M -Xmx{XMX} -cp "./OsmAndMapCreator.jar:lib/OsmAnd-core.jar:./lib/*.jar" net.osmand.util.IndexBatchCreator batch.xml', shell=True, capture_output=True, check=True,encoding='utf8')
     except CalledProcessError as error:
         logging.error(str(area_list) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details', exc_info = True)
     # move files out of build folder

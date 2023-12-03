@@ -12,7 +12,7 @@ import oa
 import obf
 import osm_utils
 # config options
-from config import db_name, id, slice_config, batches, log_level
+from config import DB_NAME, ID_START, slice_config, batches, LOG_LEVEL
 
 def parse_meta_commands(args):
     '''
@@ -70,13 +70,13 @@ def run_all(area, args):
     if args.load_oa:
         working_area.decompress_oa()
         working_area.create_master_list()
-        working_area.load_oa(db_name)
+        working_area.load_oa(DB_NAME)
     if args.filter_data:
-        working_area.filter_data(db_name)
+        working_area.filter_data(DB_NAME)
     if args.merge_oa:
-        working_area.merge_oa(db_name)
+        working_area.merge_oa(DB_NAME)
     if args.output_osm:
-        working_area.output_osm(id, db_name)
+        working_area.output_osm(ID_START, DB_NAME)
     if args.update_osm:
         osm = osm_utils.Osm(working_area)
         osm.update_osm(working_area)
@@ -102,7 +102,7 @@ def main(args=None):
     driven and sends areas to other function for processing. When done, file names are cleaned and
     checksums created
     '''
-    logging.basicConfig(filename=f'processing_{datetime.datetime.today().isoformat()}.log', level=log_level.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
+    logging.basicConfig(filename=f'processing_{datetime.datetime.today().isoformat()}.log', level=LOG_LEVEL.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
     # commandline argument setup
     parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
     parser.add_argument('area_list', nargs='*', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')

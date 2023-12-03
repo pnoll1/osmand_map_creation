@@ -1,7 +1,7 @@
 # database info
 db_name = 'gis'
 # id to count down from for addresses added to each area
-id = 2**34
+id_start = 2**34
 # batch settings
 # list, each batch is a string
 # leave empty to use from command line or as module

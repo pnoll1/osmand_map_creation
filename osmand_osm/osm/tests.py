@@ -7,6 +7,7 @@ from pathlib import Path
 
 import psycopg
 
+from config import DB_NAME, ID_START
 import oa
 import processing
 
@@ -23,7 +24,7 @@ class UnitTests(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.conn = psycopg.connect('dbname=gis')
+        self.conn = psycopg.connect(f'dbname={DB_NAME}')
         self.cur = self.conn.cursor()
 
     def tearDown(self):
@@ -146,9 +147,8 @@ class UnitTests(unittest.TestCase):
                 , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        db_name = 'gis'
         working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
-        working_area.merge_oa(db_name)
+        working_area.merge_oa(DB_NAME)
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
@@ -173,9 +173,8 @@ class UnitTests(unittest.TestCase):
         #run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
         run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
         working_area = oa.WorkingArea('aa')
-        db_name = 'gis'
         working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
-        working_area.merge_oa(db_name)
+        working_area.merge_oa(DB_NAME)
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
@@ -209,9 +208,7 @@ class UnitTests(unittest.TestCase):
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/output-osm-ids.geojson')) \
                 , oa.Source(Path('aa/output-osm-ids2.geojson'))]
-        db_name = 'gis'
-        id = 2**34
-        working_area.output_osm(id, db_name)
+        working_area.output_osm(ID_START, DB_NAME)
         # check output files have ids different and descending
         run('osmium cat --no-progress -f osm aa/output-osm-ids_addresses.osm.pbf > aa/output-osm-ids_addresses.osm', shell=True)
         with open('aa/output-osm-ids_addresses.osm') as test_file:
@@ -234,9 +231,7 @@ class UnitTests(unittest.TestCase):
         run('psql -d gis < $PWD/aa/output_osm_addresses_city.sql',shell=True)
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/output-osm-addresses-city.geojson'))]
-        db_name = 'gis'
-        id = 2**34
-        working_area.output_osm(id, db_name)
+        working_area.output_osm(ID_START, DB_NAME)
         run('osmium cat --no-progress -f osm aa/output-osm-addresses-city_addresses.osm.pbf > aa/output-osm-addresses-city_addresses.osm', shell=True)
         with open('aa/output-osm-addresses-city_addresses.osm') as test_file:
             file_text = test_file.read()
