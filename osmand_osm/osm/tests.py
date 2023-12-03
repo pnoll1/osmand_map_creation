@@ -196,15 +196,25 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
         self.conn.commit()
         # load data into postgres
-        run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
+        self.cur.execute("create table aa_merge_oa_addresses_city_temp (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, unit character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (1, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (2, '115', 'NW 41st ST', '98107', '87d28792bee6b164', 'POINT(-122.3578935 47.6561136)'))
+        self.conn.commit()
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
         working_area.merge_oa(DB_NAME)
         self.cur.execute("select * from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
-        self.assertIn((2, '87d28792bee6b164', '115', 'NW  41ST ST', '', 'SEATTLE', 'KING', '', '98107', '316864.0', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
-        self.assertIn((1, 'e8605a496593386e', '119', 'NW  41ST ST', '', 'SEATTLE', 'KING', '', '98107', '324731.0', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
+        self.assertIn((2, None, '115', 'NW 41st ST', None, None, None, None, '98107', '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
+        self.assertIn((1, None, '119', 'NW 41st ST', None, None, None, None, '98107', 'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
 
     def test_output_osm_ids(self):
         '''
