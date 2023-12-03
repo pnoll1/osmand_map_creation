@@ -49,7 +49,10 @@ class WorkingArea():
         return os.stat(f'{self.name_underscore}.osm.pbf').st_size
 
     def decompress_oa(self):
-        run(['unzip', '-qq', '-o', 'data',self.directory.as_posix() + '/*'])
+        try:
+            run(['unzip', '-qq', '-o', 'data',self.directory.as_posix() + '/*'])
+        except CalledProcessError as error:
+            logging.error(self.directory.as_posix() + ' ' + error.stderr)
 
     def create_master_list(self):
         '''
@@ -333,7 +336,7 @@ class WorkingArea():
                 run(['mv',f'{self.directory}/{self.name_underscore}_{slice_name}.osm.pbf', pbf_output])
         # move all other files
         elif ready_to_move:
-            run(['mv',f'{self.directory}/{self.name_underscore}.osm.pbf', pbf_output])
+            run(['mv', self.pbf, pbf_output])
 
     def slice(self, config):
         '''
