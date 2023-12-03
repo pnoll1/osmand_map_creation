@@ -43,12 +43,21 @@ class WorkingArea():
         return 'WorkingArea(' + self.name + ')'
 
     def current_pbf_size(self):
+        '''
+        size of current run's pbf file in working_area dir
+        '''
         return os.stat(self.pbf).st_size
 
     def previous_pbf_size(self):
+        '''
+        size of previous run's pbf file in osm dir
+        '''
         return os.stat(f'{self.name_underscore}.osm.pbf').st_size
 
     def decompress_oa(self):
+        '''
+        unzips oa data for current working area
+        '''
         try:
             run(['unzip', '-qq', '-o', 'data',self.directory.as_posix() + '/*'])
         except CalledProcessError as error:
@@ -310,7 +319,7 @@ class WorkingArea():
         stats, stats_osm, stats_final = self.prep_for_qa()
         # file is not empty
         # Check if items have unique ids
-        if json.loads(stats_final.stdout)['data']['multiple_versions'] == True:
+        if json.loads(stats_final.stdout)['data']['multiple_versions']:
             logging.error('ERROR: Multiple items with same id ' + self.name)
             ready_to_move = False
         # Check if added data overlaps with OSM ids
@@ -381,4 +390,3 @@ def update_oa(token):
     output: none
     '''
     run(['wget', '--backups=1', '--header', 'Authorization: Bearer ' + token, 'https://batch.openaddresses.io/api/collections/1/data'])
-
