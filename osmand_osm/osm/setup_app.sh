@@ -2,7 +2,7 @@
 # Read script before running!
 # Commands may overwrite existing files, backup before running
 # Some comments describe manual steps that need to be done
-# Made for Debian unstable, commands may need tweaking for other distros
+# Made for Debian 12, commands may need tweaking for other distros
 # assumes setup_container.sh and lxc-attach have already been run
 # Run this script in root level of container
 
