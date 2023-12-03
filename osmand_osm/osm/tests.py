@@ -71,10 +71,39 @@ class UnitTests(unittest.TestCase):
         self.cur.execute('drop table if exists aa_filter_data_addresses_city_temp')
         self.conn.commit()
         # load data into postgres
-        run('psql -d gis < $PWD/aa/filter_data_addresses_city_temp.sql',shell=True)
+        self.cur.execute("create table aa_filter_data_addresses_city_temp (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, \
+                unit character varying, city character varying, district character varying, \
+                region character varying, postcode character varying, hash character varying, \
+                wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (1, '1', 'Di Mario Dr', '02904', '908f551defc1295a', 'POINT(-71.4188401 41.8572897)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (2, 'SN', 'CALLE EMILIO GARCÍA', '02904', '59a2672f7f81bc31', 'POINT(-102.2759162 21.8011834)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (3, '--', 'Linwood Ave', '02907', 'e1262d57e0077c2e', 'POINT(-71.4373704 41.8076377)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (4, '1127\b', 'TANGELOS ST', '93306', '11e4eb3ece546426', 'POINT(-118.901449 35.3685914)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (5, '2857', 'RAYMOND J REED \u001b SE', '', '45e2b88e896ed2e6', 'POINT(-107.7285659 32.2526736)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash) \
+                values (%s, %s, %s, %s, %s)" \
+                , (6, '119', 'MAIN ST', '', '5f1f1bb28879f693'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (7, '147', 'ABBOTSFORD Road', '4006', '183080127302f78f', 'POINT(0 0)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (8, '93', '', '1420', 'aaff5827c1009fba', 'POINT(4.381707 50.6860641)'))
+        self.conn.commit()
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/filter-data-addresses-city.geojson'))]
-        working_area.filter_data('gis')
+        working_area.filter_data(DB_NAME)
         # check for empty street
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where street='' or street is null")
         data = self.cur.fetchall()
@@ -86,11 +115,11 @@ class UnitTests(unittest.TestCase):
         # check for illegal unicode in number
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where number ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
         data = self.cur.fetchall()
-        self.assertEqual(data,[]) 
+        self.assertEqual(data,[])
         # check for illegal unicode in street
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where street ~ '[\x01-\x08\x0b\x0c\x0e-\x1F\uFFFE\uFFFF]';")
         data = self.cur.fetchall()
-        self.assertEqual(data,[]) 
+        self.assertEqual(data,[])
         # check for SN
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where number='SN'")
         data = self.cur.fetchall()
@@ -98,7 +127,7 @@ class UnitTests(unittest.TestCase):
         # check for records without geometry
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where wkb_geometry is null")
         data = self.cur.fetchall()
-        self.assertEqual(data,[]) 
+        self.assertEqual(data,[])
         # check for records with geometry at 0,0
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where wkb_geometry='0101000020E610000000000000000000000000000000000000'")
         data = self.cur.fetchall()
@@ -114,9 +143,6 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
         self.conn.commit()
         # load data into postgres
-        #run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
-        #run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
-        # create temp table
         self.cur.execute("create table aa_merge_oa_addresses_city_temp (ogc_fid integer NOT NULL, \
                 id character varying, number character varying, street character varying, \
                 unit character varying, city character varying, district character varying, \
@@ -170,7 +196,6 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
         self.conn.commit()
         # load data into postgres
-        #run('psql -d gis < $PWD/aa/merge_oa_addresses_city.sql',shell=True)
         run('psql -d gis < $PWD/aa/merge_oa_addresses_city_temp.sql',shell=True)
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
