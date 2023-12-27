@@ -3,7 +3,6 @@ utilities for working with OpenAddresses data and transforming to OSM format
 '''
 import json
 import logging
-import os
 from pathlib import Path
 from subprocess import run, CalledProcessError
 
@@ -41,18 +40,6 @@ class WorkingArea():
 
     def __repr__(self):
         return 'WorkingArea(' + self.name + ')'
-
-    def current_pbf_size(self):
-        '''
-        size of current run's pbf file in working_area dir
-        '''
-        return os.stat(self.pbf).st_size
-
-    def previous_pbf_size(self):
-        '''
-        size of previous run's pbf file in osm dir
-        '''
-        return os.stat(f'{self.name_underscore}.osm.pbf').st_size
 
     def decompress_oa(self):
         '''
@@ -326,9 +313,6 @@ class WorkingArea():
         if json.loads(stats_osm.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
             logging.error('ERROR: Added data overlaps with OSM data ' + self.name)
             ready_to_move = False
-        diff = self.current_pbf_size() - self.previous_pbf_size()
-        if diff < 0:
-            logging.warning(f'current pbf smaller than previous by {diff} bytes')
         logging.info(self.name + 'quality check finished')
         return ready_to_move
 
