@@ -102,6 +102,75 @@ class WorkingArea():
             run(['rm', source.path.as_posix()])
         logging.info(self.name + ' ' + 'Load Finished')
 
+    def filter_complex_garbage(self, table, cur):
+        suffix_lookup = {
+            'AVE': 'Avenue',
+            'AV': 'Avenue',
+            'CIR': 'Circle',
+            'CI': 'Circle',
+            'RD': 'Road',
+            'EXT': 'Extension',
+            'ST': 'Street',
+            'PL': 'Place',
+            'WY': 'Way', # removed not official abbreviation
+            'CRES': 'Crescent',
+            'BLVD': 'Boulevard',
+            'DR': 'Drive',
+            'LN': 'Lane',
+            'LN RD': 'Lane Road',
+            'LANE': 'Lane',
+            'LP': 'Loop',
+            'CT': 'Court',
+            'CRT': 'Court',
+            'GR': 'Grove',
+            'CL': 'Close',
+            'TER': 'Terrace',
+            'TRL': 'Trail',
+            'AVE CT': 'Avenue Court',
+            'AVE PL': 'Avenue Place',
+            'ST CT': 'Street Court',
+            'ST PL': 'Street Place',
+            'HL': 'Hill',
+            'VW': 'View',
+            'PKWY': 'Parkway',
+            'RWY': 'Railway',
+            'DIV': 'Diversion',
+            'HWY': 'Highway',
+            'CONN': 'Connector'
+        }
+
+        dir_lookup = {
+            'E': 'East',
+            'S': 'South',
+            'N': 'North',
+            'W': 'West',
+            'SE': 'Southeast',
+            'NE': 'Northeast',
+            'SW': 'Southwest',
+            'NW': 'Northwest'
+        }
+        #conn = psycopg.connect(f'dbname={db_name}')
+        #cur = conn.cursor()
+        cur.execute(f'SELECT ogc_fid,street FROM {table};')
+        record_list = cur.fetchall()
+        for record in record_list:
+            addr = record[1]
+            street_array = addr.split(' ')
+            n = 0
+            if street_array[0].upper() in suffix_lookup.keys() or street_array[0].upper() in dir_lookup.keys():
+                n += 1
+                # ne st case
+                if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
+                    cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
+                # ne   st case
+                elif street_array[n] == '':
+                    n+=2
+                    if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
+                        cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
+        #conn.commit()
+        #cur.close()
+        #conn.close()
+
     def filter_data(self, db_name):
         '''
         input: working_area object
@@ -149,6 +218,7 @@ class WorkingArea():
             # delete records located at 0,0
             cur.execute(f"delete from \"{source.table_temp}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';")
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
+            self.filter_complex_garbage(source.table_temp, cur)
             conn.commit()
         cur.close()
         conn.close()
