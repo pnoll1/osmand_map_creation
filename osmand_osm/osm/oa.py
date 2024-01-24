@@ -149,27 +149,25 @@ class WorkingArea():
             'SW': 'Southwest',
             'NW': 'Northwest'
         }
-        #conn = psycopg.connect(f'dbname={db_name}')
-        #cur = conn.cursor()
         cur.execute(f'SELECT ogc_fid,street FROM {table};')
         record_list = cur.fetchall()
         for record in record_list:
-            addr = record[1]
-            street_array = addr.split(' ')
+            street = record[1]
+            street_array = street.split(' ')
             n = 0
-            if street_array[0].upper() in suffix_lookup.keys() or street_array[0].upper() in dir_lookup.keys():
+            if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
                 n += 1
                 # ne st case
-                if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
-                    cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
-                # ne   st case
-                elif street_array[n] == '':
-                    n+=2
+                try:
                     if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
                         cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
-        #conn.commit()
-        #cur.close()
-        #conn.close()
+                    # ne   st case
+                    elif street_array[n] == '' and street_array[n+1] == '':
+                        n += 2
+                        if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
+                            cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
+                except IndexError:
+                    logging.warning(f'{table} has {street} that put filter_complex_garbage out of range')
 
     def filter_data(self, db_name):
         '''
