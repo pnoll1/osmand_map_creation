@@ -112,6 +112,9 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
                 values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
                 , (12, '171353', 'US-101', '98331', '', 'POINT(-124.3131452 47.7630055)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (13, '211', 'Kensington', '28043', 'a783a72154a585c1', 'POINT(-81.8927871 35.3671691)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/filter-data-addresses-city.geojson'))]

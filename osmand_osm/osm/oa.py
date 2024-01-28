@@ -160,12 +160,14 @@ class WorkingArea():
                 # ne st case
                 try:
                     if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
-                        cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
+                        cur.execute(f"DELETE FROM {table} where street='{street}'")
+                        logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
                     # ne   st case
                     elif street_array[n] == '' and street_array[n+1] == '':
                         n += 2
                         if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
-                            cur.execute(f'DELETE FROM {table} where ogc_fid={record[0]}')
+                            cur.execute(f"DELETE FROM {table} where street='{street}'")
+                            logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
                 except IndexError:
                     logging.warning(f'{table} has {street} that put filter_complex_garbage out of range')
 
@@ -218,7 +220,7 @@ class WorkingArea():
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
             # delete 1 word streets, allow for US-101 case
             cur.execute(f"delete from \"{source.table_temp}\" where street !~ '.*[- ]+.*';")
-            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' delete 1 word street')
+            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' 1 word street')
             self.filter_complex_garbage(source.table_temp, cur)
             conn.commit()
         cur.close()
