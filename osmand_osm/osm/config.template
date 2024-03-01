@@ -1,7 +1,7 @@
 # database info
-db_name = 'gis'
+DB_NAME = 'gis'
 # id to count down from for addresses added to each area
-id_start = 2**34
+ID_START = 2**34
 # batch settings
 # list, each batch is a string
 # leave empty to use from command line or as module
@@ -26,6 +26,6 @@ slice_config['us:ca'] = [['north','-119.997,41.998,-125.365,38.964'],['northcent
 	['central','-114.049,37.029,-123.118,34.547'],['southcentral','-123.118,34.547,-113.994,33.312'],\
 	['south','-113.994,33.312,-119.96,31.85']]
 # max memory allocated to Java for osmand map creator
-Xmx = '3G'
+XMX = '3G'
 # specify log level. Options are debug, info, warning or error
-log_level = 'info'
+LOG_LEVEL = 'info'
