@@ -154,18 +154,20 @@ class WorkingArea():
         for record in record_list:
             street = record[1]
             street_array = street.split(' ')
-            n = 0
-            if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
-                n += 1
+            index = 0
+            if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
+                index += 1
                 # ne st case
                 try:
-                    if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
-                        cur.execute(f"DELETE FROM {table} where street='{street}'")
-                        logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
+                    # avoid ne st joseph's way case
+                    if len(street_array) == 2:
+                        if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
+                            cur.execute(f"DELETE FROM {table} where street='{street}'")
+                            logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
                     # ne   st case
-                    elif street_array[n] == '' and street_array[n+1] == '':
-                        n += 2
-                        if street_array[n].upper() in dir_lookup.keys() or street_array[n].upper() in suffix_lookup.keys():
+                    elif street_array[index] == '' and street_array[index+1] == '':
+                        index += 2
+                        if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
                             cur.execute(f"DELETE FROM {table} where street='{street}'")
                             logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
                 except IndexError:
