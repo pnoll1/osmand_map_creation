@@ -165,11 +165,12 @@ class WorkingArea():
                             cur.execute(f"DELETE FROM {table} where street='{street}'")
                             logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
                     # ne   st case
-                    elif street_array[index] == '' and street_array[index+1] == '':
-                        index += 2
-                        if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
-                            cur.execute(f"DELETE FROM {table} where street='{street}'")
-                            logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
+                    if len(street_array) == 4:
+                        if street_array[index] == '' and street_array[index+1] == '':
+                            index += 2
+                            if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
+                                cur.execute(f"DELETE FROM {table} where street='{street}'")
+                                logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
                 except IndexError:
                     logging.warning(f'{table} has {street} that put filter_complex_garbage out of range')
 
