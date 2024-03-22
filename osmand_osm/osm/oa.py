@@ -245,8 +245,11 @@ class WorkingArea():
             except:
                 conn.rollback()
             # insert addresses from temp table if not there, using index to autodetect dupes
-            cur.execute(f'insert into {source.table} select * from {source.table_temp} on conflict do nothing')
-            logging.info(source.table + ' Insert ' + str(cur.rowcount))
+            try:
+                cur.execute(f'insert into {source.table} select * from {source.table_temp} on conflict do nothing')
+                logging.info(source.table + ' Insert ' + str(cur.rowcount))
+            except psycopg.errors.InvalidParameterValue as error:
+                logging.error(f'{source.table} errored on merge_oa insert: {error}')
             # get rid of temp table
             cur.execute(f'drop table {source.table_temp}')
             conn.commit()
