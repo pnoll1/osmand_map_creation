@@ -33,3 +33,7 @@ Test data is stored in aa and ab folders. Any test data needed should be stored 
 
 ## Unit Tests
  Add your test to tests.py under UnitTests class. If needed, use psycopg to add database table prefixed with aa_ and data.
+
+# Debugging
+## OA data
+To view list of current data files run unzip data -l. Decompress file with unzip data path/filename. 
