@@ -168,7 +168,6 @@ class UnitTests(unittest.TestCase):
         data = self.cur.fetchall()
         self.assertEqual(len(data), 1)
 
-
     def test_merge_oa(self):
         '''       
         test additional data inserted from temp table when table already exists with data
@@ -251,6 +250,52 @@ class UnitTests(unittest.TestCase):
         # check that temp table copied over
         self.assertIn((2, None, '115', 'NW 41st ST', None, None, None, None, '98107', '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
         self.assertIn((1, None, '119', 'NW 41st ST', None, None, None, None, '98107', 'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
+
+    def test_merge_oa_zdata(self):
+        '''
+        test that addresses with z data cleaned and inserted into db
+        '''
+        # cleanup postgres table
+        self.cur.execute("drop table if exists aa_merge_oa_addresses_city;")
+        self.cur.execute("drop table if exists aa_merge_oa_addresses_city_temp;")
+        self.conn.commit()
+        # load data into postgres
+        self.cur.execute("create table aa_merge_oa_addresses_city_temp (ogc_fid integer NOT NULL, \
+                id character varying, number character varying, street character varying, unit character varying, \
+                city character varying, district character varying, region character varying, \
+                postcode character varying, hash character varying, wkb_geometry public.geometry(PointZ, 4326));")
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (1, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133 0.0)'))
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (2, '115', 'NW 41st ST', '98107', '87d28792bee6b164', 'POINT(-122.3578935 47.6561136 0.0)'))
+        self.cur.execute("insert into aa_merge_oa_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (3, '34', 'BARR ROAD', '98643', '2a7175361ea6f935', 'POINT(-123.6361676 46.32554 0.0)'))
+        # create table
+        self.cur.execute("create table aa_merge_oa_addresses_city (ogc_fid integer NOT NULL, \
+                  id character varying, number character varying, street character varying, \
+                  unit character varying, city character varying, district character varying, \
+                  region character varying, postcode character varying, hash character varying, \
+                  wkb_geometry public.geometry(Point, 4326));")
+        self.cur.execute('alter table aa_merge_oa_addresses_city add constraint aa_merge_oa_addresses_city_unique \
+                unique nulls not distinct (number, street, unit, wkb_geometry)')
+        self.conn.commit()
+        working_area = oa.WorkingArea('aa')
+        working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        working_area.merge_oa(DB_NAME)
+        self.cur.execute("select * from aa_merge_oa_addresses_city;")
+        data = self.cur.fetchall()
+        # check that good data exists
+        self.assertIn((2, None, '115', 'NW 41st ST', None, None, None, None, '98107', \
+                '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
+        self.assertIn((1, None, '119', 'NW 41st ST', None, None, None, None, '98107', \
+                'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
+        # check if z still in geom data
+        self.cur.execute("select ST_Z(wkb_geometry) from aa_merge_oa_addresses_city where number='34';")
+        data = self.cur.fetchall()
+        self.assertEqual(data[0][0], None)
 
     def test_output_osm_ids(self):
         '''

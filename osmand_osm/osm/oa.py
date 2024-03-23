@@ -250,6 +250,10 @@ class WorkingArea():
                 logging.info(source.table + ' Insert ' + str(cur.rowcount))
             except psycopg.errors.InvalidParameterValue as error:
                 logging.error(f'{source.table} errored on merge_oa insert: {error}')
+                conn.rollback()
+                # get rid of z geometry
+                cur.execute(f'alter table {source.table_temp} alter column wkb_geometry type geometry(point, 4326) using ST_Force2D(wkb_geometry);')
+                cur.execute(f'insert into {source.table} select * from {source.table_temp} on conflict do nothing')
             # get rid of temp table
             cur.execute(f'drop table {source.table_temp}')
             conn.commit()
