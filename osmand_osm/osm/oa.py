@@ -149,30 +149,22 @@ class WorkingArea():
             'SW': 'Southwest',
             'NW': 'Northwest'
         }
-        cur.execute(f'SELECT ogc_fid,street FROM {table};')
-        record_list = cur.fetchall()
-        for record in record_list:
-            street = record[1]
-            street_array = street.split(' ')
-            index = 0
-            if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
-                index += 1
-                # ne st case
-                try:
-                    # avoid ne st joseph's way case
-                    if len(street_array) == 2:
-                        if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
-                            cur.execute(f"DELETE FROM {table} where street='{street}'")
-                            logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
-                    # ne   st case
-                    if len(street_array) == 4:
-                        if street_array[index] == '' and street_array[index+1] == '':
-                            index += 2
-                            if street_array[index].upper() in dir_lookup.keys() or street_array[index].upper() in suffix_lookup.keys():
-                                cur.execute(f"DELETE FROM {table} where street='{street}'")
-                                logging.info(f'{table} DELETE {str(cur.rowcount)} {street}')
-                except IndexError:
-                    logging.warning(f'{table} has {street} that put filter_complex_garbage out of range')
+        # create all combos of suffix and dir and store in hit list
+        hit_list = []
+        for dir_key in dir_lookup:
+            for suffix_key in suffix_lookup:
+                # create ne st cases
+                hit_list.append(f'{dir_key} {suffix_key}')
+                hit_list.append(f'{suffix_key} {dir_key}')
+                # create ne   st cases
+                hit_list.append(f'{suffix_key}   {dir_key}')
+                hit_list.append(f'{dir_key}   {suffix_key}')
+        for target in hit_list:
+            try:
+                cur.execute(f"DELETE FROM {table} where street='{target}'")
+                logging.info(f'{table} DELETE {str(cur.rowcount)} {target}')
+            except Exception as error:
+                logging.warning(f'{table} filter complex had issue deleting {target}')
 
     def filter_data(self, db_name):
         '''
