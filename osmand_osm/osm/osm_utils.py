@@ -44,7 +44,7 @@ class Osm():
         action: downloads osm extract to corresponding folder
         output: none
         '''
-        logging.info(working_area.name + 'updating OSM data')
+        logging.info(f'{working_area.name} updating OSM data')
         url = self.geofabrik_lookup(working_area)
         run(f'curl --output {self.pbf} {url}', shell=True, capture_output=True, encoding='utf8')
         run(f'curl --output {self.pbf_md5} {url}.md5', shell=True, capture_output=True, encoding='utf8')
@@ -59,4 +59,4 @@ class Osm():
         if md5 != md5_calced:
             logging.error('md5 check failed for ' + working_area.name)
             raise ValueError
-        logging.info(working_area.name + 'osm update finished')
+        logging.info(f'{working_area.name} osm update finished')

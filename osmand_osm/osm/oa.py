@@ -318,7 +318,7 @@ class WorkingArea():
         # remove file from file list so merge will work
         for source in removal_list:
             self.master_list.remove(source)
-        logging.info(self.name + 'finished writing address files')
+        logging.info(f'{self.name} finished writing address files')
 
     def merge(self):
         '''
@@ -346,7 +346,7 @@ class WorkingArea():
         input: working_area object
         output: stats for last source ran, osm area extract and final file
         '''
-        logging.info(self.name + 'prep_for_qa started')
+        logging.info(f'{self.name} prep_for_qa started')
         def fileinfo(path):
             return run(f'osmium fileinfo --no-progress -ej {path}', shell=True, capture_output=True ,check=True , encoding='utf8')
         # get data for last source ran
@@ -370,7 +370,7 @@ class WorkingArea():
             logging.error(self.name_underscore + ' fileinfo error in completed file ' + error.stderr)
             ready_to_move=False
             raise
-        logging.info(self.name + 'prep_for_qa finished')
+        logging.info(f'{self.name} prep_for_qa finished')
         return stats, stats_osm, stats_final
 
     def quality_check(self, ready_to_move):
@@ -378,7 +378,7 @@ class WorkingArea():
         input: ready_to_move boolean
         output: boolean that is True for no issues or False for issues
         '''
-        logging.info(self.name + 'quality check started')
+        logging.info(f'{self.name} quality check started')
         stats, stats_osm, stats_final = self.prep_for_qa()
         # file is not empty
         # Check if items have unique ids
@@ -389,7 +389,7 @@ class WorkingArea():
         if json.loads(stats_osm.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
             logging.error('ERROR: Added data overlaps with OSM data ' + self.name)
             ready_to_move = False
-        logging.info(self.name + 'quality check finished')
+        logging.info(f'{self.name} quality check finished')
         return ready_to_move
 
     def move(self, ready_to_move, pbf_output, sliced_area=None):
