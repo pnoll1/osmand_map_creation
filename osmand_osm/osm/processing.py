@@ -102,7 +102,7 @@ def main(args=None):
     driven and sends areas to other function for processing. When done, file names are cleaned and
     checksums created
     '''
-    logging.basicConfig(filename=f'processing_{datetime.datetime.today().isoformat()}.log', level=LOG_LEVEL.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
+    logging.basicConfig(filename=f'logs/processing_{datetime.datetime.today().isoformat()}.log', level=LOG_LEVEL.upper(), format='%(asctime)s %(name)s %(levelname)s %(message)s')
     # commandline argument setup
     parser = argparse.ArgumentParser(description='Process OpenAddresses data and merge with OSM extract to create single osm file per area')
     parser.add_argument('area_list', nargs='*', help='lowercase ISO 3166-1 alpha-2 country code and state/province eg us:wa')

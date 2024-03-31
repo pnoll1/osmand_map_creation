@@ -12,7 +12,7 @@ import oa
 import processing
 
 time_current = datetime.datetime.today().isoformat()
-log_filename = f'processing_test_{time_current}'
+log_filename = f'logs/processing_test_{time_current}.log'
 logging.basicConfig(filename=log_filename, level='DEBUG', format='%(asctime)s %(name)s %(levelname)s %(message)s')
 
 # setup object to hold parser args

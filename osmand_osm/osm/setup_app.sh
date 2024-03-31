@@ -22,8 +22,8 @@ mkdir osmand_gen
 mkdir terrain
 # Download OsmAnd Map Creator
 wget http://download.osmand.net/latest-night-build/OsmAndMapCreator-main.zip
-unzip -o OsmAndMapCreator-main.zip
-cp batch.xml.template batch.xml
+unzip -o OsmAndMapCreator-main.zip -d osmand_map_creator
+cp osmand_map_creator/batch.xml.template osmand_map_creator/batch.xml
 # Fill out batch.xml with proper paths
 # Download srtm files(~200GB)
 # wget -r -nH https://builder.osmand.net/terrain/
@@ -44,6 +44,7 @@ wget -O geofabrik_index-v1.json https://download.geofabrik.de/index-v1.json
 touch secrets.py
 echo "add OA token obtained from OA website in secrets.py as oa_token = 'token_data'"
 cp config.template config.py
+mkdir $install_dir/osmand_osm/osm/logs
 # Change details in config.py if needed
 sudo chown -R pat /home/pat/projects
 # give pat sudo for updates

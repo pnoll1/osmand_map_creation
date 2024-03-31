@@ -12,6 +12,6 @@ cd $install_dir
 # remove old file
 rm OsmAndMapCreator-main.zip
 wget http://download.osmand.net/latest-night-build/OsmAndMapCreator-main.zip
-unzip -o OsmAndMapCreator-main.zip
+unzip -o OsmAndMapCreator-main.zip -d osmand_map_creator
 # restore settings
-cp batch.xml.template batch.xml
+cp osmand_map_creator/batch.xml.template osmand_map_creator/batch.xml
