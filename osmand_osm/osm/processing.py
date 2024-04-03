@@ -55,8 +55,6 @@ def update_run_all_build(args, area_list):
         for i in area_list:
             area_list_of_tuples.append((i,args))
         p.starmap(run_all, area_list_of_tuples)
-    if args.build:
-        obf.build(area_list)
 
 def run_all(area, args):
     '''
@@ -89,12 +87,8 @@ def run_all(area, args):
     if args.slice:
         sliced_area = working_area.slice(slice_config)
         logging.info('slice finished for ' + working_area.name)
-    if args.output_osm and args.slice:
-        working_area.move(ready_to_move, pbf_output, sliced_area)
-        logging.info('pbf files moved to build folder for ' + working_area.name)
-    elif args.output_osm:
-        working_area.move(ready_to_move, pbf_output)
-        logging.info('pbf files moved to build folder for ' + working_area.name)
+    if args.build:
+        obf.build(working_area.pbf)
 
 def main(args=None):
     '''
