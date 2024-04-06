@@ -8,7 +8,7 @@ from pathlib import Path
 import psycopg
 
 from config import DB_NAME, ID_START
-import oa
+import oa, obf
 import processing
 
 time_current = datetime.datetime.today().isoformat()
@@ -379,9 +379,9 @@ class UnitTests(unittest.TestCase):
         slice_config = {}
         slice_config['aa'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '-79.508,24.237,-82.579,27.079']]
         working_area = oa.WorkingArea('aa')
-        sliced_area = working_area.slice(slice_config)
+        subarea_list = working_area.slice(slice_config)
         # check function output
-        self.assertEqual(sliced_area, slice_config['aa'])
+        self.assertEqual(subarea_list[0].bounding_box, slice_config['aa'][0][1])
         # check file output
         run('osmium cat --no-progress -f osm aa/aa_south.osm.pbf > aa/aa_south.osm', shell=True)
         with open('aa/aa_south.osm') as test_file:
@@ -391,6 +391,16 @@ class UnitTests(unittest.TestCase):
         with open('aa/aa_north.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, 'OLD BELLAMY RD')
+
+    def test_build_slices(self):
+        '''
+        build aa using files generated from test_slice
+        '''
+        slice_config = {}
+        slice_config['aa'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '-79.508,24.237,-82.579,27.079']]
+        working_area = oa.WorkingArea('aa')
+        subarea_list = working_area.slice(slice_config)
+        obf.build(subarea_list)
 
 class IntegrationTests(unittest.TestCase):
     '''
@@ -415,7 +425,7 @@ class IntegrationTests(unittest.TestCase):
         args.calculate_hashes = False
 
     def tearDown(self):
-        run(['mv', '../us_ri.osm.pbf', './us_ri_test.osm.pbf'])
+        run(['mv', 'us/ri/us_ri.osm.pbf', './us_ri_test.osm.pbf'])
 
     def test_success(self):
         '''

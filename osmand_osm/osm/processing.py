@@ -85,10 +85,13 @@ def run_all(area, args):
     if args.quality_check:
         ready_to_move = working_area.quality_check(ready_to_move)
     if args.slice:
-        sliced_area = working_area.slice(slice_config)
-        logging.info('slice finished for ' + working_area.name)
+        subarea_list = working_area.slice(slice_config)
     if args.build:
-        obf.build(working_area.pbf)
+        if subarea_list:
+            for subarea in subarea_list:
+                obf.build(subarea.pbf)
+        else:
+            obf.build(working_area.pbf)
 
 def main(args=None):
     '''

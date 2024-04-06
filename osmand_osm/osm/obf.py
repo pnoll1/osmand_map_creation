@@ -19,20 +19,28 @@ def clean_file_names():
             new_file_path = directory.joinpath(Path(new_filename))
             os.replace(file, new_file_path)
 
-def build(pbf):
+def build(areas):
     '''
     input: area list
     action: runs osmand map creator on files in osmand_osm directory, cleans obf file names and moves pbfs into osm directory
     output: none
     '''
-    logging.info('Builds started')
-    try:
-        run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
-    except CalledProcessError as error:
-        logging.error(str(pbf) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
-    # move files out of build folder
-    run('cd ..;mv *.pbf osm/', shell=True, capture_output=True, encoding='utf8')
-    clean_file_names()
+    if isinstance(areas, list):
+        for subarea in areas:
+            try:
+                logging.info(f'{subarea.name} build started')
+                run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
+                logging.info(f'{subarea.name} build finished')
+            except CalledProcessError as error:
+                logging.error(str(subarea.name) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
+    else:
+        try:
+            logging.info(f'{areas.name} build started')
+            run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {areas}', shell=True, capture_output=True, check=True,encoding='utf8')
+            logging.info(f'{areas.name} build finished')
+        except CalledProcessError as error:
+            logging.error(str(areas) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
+    #clean_file_names()
 
 def calculate_hashes():
     '''
@@ -40,7 +48,7 @@ def calculate_hashes():
     action: create hash file for every obf file in osmand_obf
     output: none
     '''
-    for file in Path('../../osmand_obf').iterdir():
+    for file in Path('./').iterdir():
         if file.suffix == '.obf':
             with open(file, 'rb') as opened_file:
                 data = opened_file.read()
