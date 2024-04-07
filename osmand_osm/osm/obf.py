@@ -3,21 +3,9 @@ utilites for working with Osmand's obf format
 '''
 import hashlib
 import logging
-import os
 from pathlib import Path
 from subprocess import run, CalledProcessError
 from config import XMX
-
-def clean_file_names():
-    '''
-    remove filename cruft added by osmand map creator
-    '''
-    for file in Path('../../osmand_obf').iterdir():
-        if '_2' in file.name:
-            directory = file.parent
-            new_filename = file.name.replace('_2','')
-            new_file_path = directory.joinpath(Path(new_filename))
-            os.replace(file, new_file_path)
 
 def build(working_area, areas):
     '''
@@ -48,7 +36,6 @@ def build(working_area, areas):
             logging.info(f'{areas.name} build finished')
         except CalledProcessError as error:
             logging.error(str(areas) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
-    #clean_file_names()
 
 def calculate_hashes():
     '''
