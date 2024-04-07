@@ -14,11 +14,10 @@ def build(working_area, areas):
     output: none
     '''
     if isinstance(areas, list):
+        subareas_string = ''
         for subarea in areas:
             # construct string for merge index call
-            subareas_string = ''
             subareas_string += f' {subarea.obf}'
-            subareas_string.lstrip(' ')
             try:
                 logging.info(f'{subarea.name} build started')
                 run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
@@ -26,6 +25,7 @@ def build(working_area, areas):
             except CalledProcessError as error:
                 logging.error(str(subarea.name) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
         try:
+            subareas_string.lstrip(' ')
             run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh merge-index {working_area.obf_name} --address --poi {subareas_string}', shell=True, capture_output=True, check=True,encoding='utf8')
         except CalledProcessError as error:
             logging.error(f'{subarea.name} map creator merge index issue {error.stderr}')
