@@ -19,7 +19,7 @@ def clean_file_names():
             new_file_path = directory.joinpath(Path(new_filename))
             os.replace(file, new_file_path)
 
-def build(areas):
+def build(working_area, areas):
     '''
     input: area list
     action: runs osmand map creator on files in osmand_osm directory, cleans obf file names and moves pbfs into osm directory
@@ -27,12 +27,20 @@ def build(areas):
     '''
     if isinstance(areas, list):
         for subarea in areas:
+            # construct string for merge index call
+            subareas_string = ''
+            subareas_string += f' {subarea.obf}'
+            subareas_string.lstrip(' ')
             try:
                 logging.info(f'{subarea.name} build started')
                 run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
                 logging.info(f'{subarea.name} build finished')
             except CalledProcessError as error:
                 logging.error(str(subarea.name) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
+        try:
+            run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh merge-index {working_area.obf_name} --address --poi {subareas_string}', shell=True, capture_output=True, check=True,encoding='utf8')
+        except CalledProcessError as error:
+            logging.error(f'{subarea.name} map creator merge index issue {error.stderr}')
     else:
         try:
             logging.info(f'{areas.name} build started')

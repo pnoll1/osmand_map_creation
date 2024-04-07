@@ -445,6 +445,7 @@ class Subarea():
     def __init__(self, working_area, config):
         self.name = f'{working_area.name_underscore}_{config[0]}'
         self.pbf = f'{working_area.directory}/{self.name}.osm.pbf'
+        self.obf = f'{self.name.capitalize()}.obf'
         self.bounding_box = config[1]
 
 class Source():

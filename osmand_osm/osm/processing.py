@@ -87,11 +87,7 @@ def run_all(area, args):
     if args.slice:
         subarea_list = working_area.slice(slice_config)
     if args.build:
-        if subarea_list:
-            for subarea in subarea_list:
-                obf.build(subarea.pbf)
-        else:
-            obf.build(working_area.pbf)
+        obf.build(working_area, subarea_list)
 
 def main(args=None):
     '''
