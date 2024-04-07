@@ -88,6 +88,8 @@ def run_all(area, args):
         subarea_list = working_area.slice(slice_config)
     if args.build:
         obf.build(working_area, subarea_list)
+    if args.calculate_hashes:
+        obf.calculate_hashes(working_area.obf_name)
 
 def main(args=None):
     '''
@@ -132,8 +134,6 @@ def main(args=None):
             area_list = vars(args)['area_list']
             update_run_all_build(args, area_list)
             logging.info('obfs build stage finished for ' + batch_string)
-    if args.calculate_hashes:
-        obf.calculate_hashes()
     logging.info('script finished')
 
 if __name__ == '__main__':

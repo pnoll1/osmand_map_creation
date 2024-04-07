@@ -37,17 +37,16 @@ def build(working_area, areas):
         except CalledProcessError as error:
             logging.error(str(areas) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
 
-def calculate_hashes():
+def calculate_hashes(filename):
     '''
-    input: none
-    action: create hash file for every obf file in osmand_obf
+    input: filename
+    action: create hash for file
     output: none
     '''
-    for file in Path('./').iterdir():
-        if file.suffix == '.obf':
-            with open(file, 'rb') as opened_file:
-                data = opened_file.read()
-                sha256 = hashlib.sha256(data).hexdigest()
-                # write sha256 to file
-                with open(file.with_suffix('.sha256'),'w') as sha256_file:
-                    sha256_file.write(sha256 + ' ' + file.name)
+    filename = Path(filename)
+    with open(filename, 'rb') as opened_file:
+        data = opened_file.read()
+        sha256 = hashlib.sha256(data).hexdigest()
+        # write sha256 to file
+        with open(filename.with_suffix('.sha256'),'w') as sha256_file:
+            sha256_file.write(sha256 + ' ' + filename.name)
