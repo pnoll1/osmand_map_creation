@@ -36,7 +36,6 @@ def build(working_area, areas):
             logging.info(f'{areas.name} build finished')
         except CalledProcessError as error:
             logging.error(str(areas) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
->>>>>>> map_creator_update
 
 def calculate_hashes(filename):
     '''
