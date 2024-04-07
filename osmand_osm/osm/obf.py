@@ -20,7 +20,7 @@ def build(working_area, areas):
             subareas_string += f' {subarea.obf}'
             try:
                 logging.info(f'{subarea.name} build started')
-                run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
+                run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf --srtm=../../terrain {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
                 logging.info(f'{subarea.name} build finished')
             except CalledProcessError as error:
                 logging.error(str(subarea.name) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
