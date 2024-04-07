@@ -412,19 +412,33 @@ class WorkingArea():
         input: working_area object, slice configs(defined in config file)
         file requirement: file must be sorted for osmium extract to work; running --quality-check handles this
         action: slices merged files according to config
-        output: config of sliced state
+        output: list of subarea objects
         '''
-        if self.name in config.keys():
-            for slice_config in config[self.name]:
-                slice_name = self.name_underscore + '_' + slice_config[0]
-                bounding_box = slice_config[1]
-                logging.info(slice_name + ' slicing')
+        if self.name in config:
+            logging.info(f'{self.name} slice started')
+            subarea_list = []
+            for subarea_config in config[self.name]:
+                subarea = Subarea(self, subarea_config)
+                subarea_list.append(subarea)
+            for subarea in subarea_list:
+                logging.info(f'{subarea.name} slicing')
                 try:
-                    run(f'osmium extract -O -b {bounding_box} -o {self.directory}/{slice_name}.osm.pbf {self.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
+                    run(f'osmium extract -O -b {subarea.bounding_box} -o {subarea.pbf} {self.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
                 except CalledProcessError as error:
                     logging.error(self.name + ' osmium extract error ' + error.stderr)
-            sliced_state = config[self.name]
-            return sliced_state
+            logging.info(f'{self.name} slice finished') 
+            return subarea_list
+
+
+class Subarea():
+    '''
+    location and config of sliced sub area
+    '''
+    def __init__(self, working_area, config):
+        self.name = f'{working_area.name_underscore}_{config[0]}'
+        self.pbf = f'{working_area.directory}/{self.name}.osm.pbf'
+        self.obf = f'{self.name.capitalize()}.obf'
+        self.bounding_box = config[1]
 
 class Source():
     '''

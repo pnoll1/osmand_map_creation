@@ -55,8 +55,6 @@ def update_run_all_build(args, area_list):
         for i in area_list:
             area_list_of_tuples.append((i,args))
         p.starmap(run_all, area_list_of_tuples)
-    if args.build:
-        obf.build(area_list)
 
 def run_all(area, args):
     '''
@@ -87,14 +85,11 @@ def run_all(area, args):
     if args.quality_check:
         ready_to_move = working_area.quality_check(ready_to_move)
     if args.slice:
-        sliced_area = working_area.slice(slice_config)
-        logging.info('slice finished for ' + working_area.name)
-    if args.output_osm and args.slice:
-        working_area.move(ready_to_move, pbf_output, sliced_area)
-        logging.info('pbf files moved to build folder for ' + working_area.name)
-    elif args.output_osm:
-        working_area.move(ready_to_move, pbf_output)
-        logging.info('pbf files moved to build folder for ' + working_area.name)
+        subarea_list = working_area.slice(slice_config)
+    if args.build:
+        obf.build(working_area, subarea_list)
+    if args.calculate_hashes:
+        obf.calculate_hashes(working_area.obf_name)
 
 def main(args=None):
     '''
@@ -139,8 +134,6 @@ def main(args=None):
             area_list = vars(args)['area_list']
             update_run_all_build(args, area_list)
             logging.info('obfs build stage finished for ' + batch_string)
-    if args.calculate_hashes:
-        obf.calculate_hashes()
     logging.info('script finished')
 
 if __name__ == '__main__':
