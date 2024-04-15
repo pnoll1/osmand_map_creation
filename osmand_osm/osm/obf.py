@@ -3,6 +3,7 @@ utilites for working with Osmand's obf format
 '''
 import hashlib
 import logging
+import os
 from pathlib import Path
 from subprocess import run, CalledProcessError
 from config import XMX
@@ -23,19 +24,22 @@ def build(working_area, areas):
                 run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf --srtm=../../terrain {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
                 logging.info(f'{subarea.name} build finished')
             except CalledProcessError as error:
-                logging.error(str(subarea.name) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
+                logging.error(f'{subarea.name} map creator build issue {error.stderr}')
         try:
             subareas_string.lstrip(' ')
             run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh merge-index {working_area.obf_name} --address --poi {subareas_string}', shell=True, capture_output=True, check=True,encoding='utf8')
+            for subarea in areas:
+                os.remove(subarea.obf)
         except CalledProcessError as error:
-            logging.error(f'{subarea.name} map creator merge index issue {error.stderr}')
+            logging.error(f'{working_area.obf_name} map creator merge index issue {error.stderr}')
+
     else:
         try:
             logging.info(f'{areas.name} build started')
             run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {areas}', shell=True, capture_output=True, check=True,encoding='utf8')
             logging.info(f'{areas.name} build finished')
         except CalledProcessError as error:
-            logging.error(str(areas) + ' OsmAndMapCreator Failure, check osmand_gen/AREA_NAME_2.obf.gen.log file for details ' + error.stderr)
+            logging.error(f'{working_area.obf_name} map creator build issue {error.stderr}')
 
 def calculate_hashes(filename):
     '''
