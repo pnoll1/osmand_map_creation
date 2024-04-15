@@ -392,21 +392,6 @@ class WorkingArea():
         logging.info(f'{self.name} quality check finished')
         return ready_to_move
 
-    def move(self, ready_to_move, pbf_output, sliced_area=None):
-        '''
-        input: working_area object, ready_to_move boolean, pbf_output location, optional sliced_area config
-        action: moves final file to pbf_output location
-        output: nothing
-        '''
-        # move sliced files
-        if sliced_area is not None and ready_to_move:
-            for slice_config in sliced_area:
-                slice_name = slice_config[0]
-                run(['mv',f'{self.directory}/{self.name_underscore}_{slice_name}.osm.pbf', pbf_output])
-        # move all other files
-        elif ready_to_move:
-            run(['mv', self.pbf, pbf_output])
-
     def slice(self, config):
         '''
         input: working_area object, slice configs(defined in config file)
