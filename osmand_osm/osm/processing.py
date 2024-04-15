@@ -80,10 +80,8 @@ def run_all(area, args):
         osm.update_osm(working_area)
     if args.merge:
         working_area.merge()
-    # allows running without quality check
-    ready_to_move = True
     if args.quality_check:
-        ready_to_move = working_area.quality_check(ready_to_move)
+        working_area.quality_check()
     if args.slice:
         subarea_list = working_area.slice(slice_config)
     if args.build:

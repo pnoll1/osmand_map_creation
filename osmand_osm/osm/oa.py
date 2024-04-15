@@ -354,26 +354,23 @@ class WorkingArea():
             stats = fileinfo(self.master_list[-1].path_osm)
         except CalledProcessError as error:
             logging.error(self.master_list[-1].path_osm + 'fileinfo error for last source ran' + error.stderr)
-            ready_to_move=False
             raise
         # get data for OSM extract
         try:
             stats_osm = fileinfo(self.pbf_osm)
         except CalledProcessError as error:
             logging.error(self.short_name + ' fileinfo error in osm extract: ' + error.stderr)
-            ready_to_move=False
             raise
         # get data for completed state file
         try:
             stats_final = fileinfo(self.pbf)
         except CalledProcessError as error:
             logging.error(self.name_underscore + ' fileinfo error in completed file ' + error.stderr)
-            ready_to_move=False
             raise
         logging.info(f'{self.name} prep_for_qa finished')
         return stats, stats_osm, stats_final
 
-    def quality_check(self, ready_to_move):
+    def quality_check(self):
         '''
         input: ready_to_move boolean
         output: boolean that is True for no issues or False for issues
@@ -383,14 +380,11 @@ class WorkingArea():
         # file is not empty
         # Check if items have unique ids
         if json.loads(stats_final.stdout)['data']['multiple_versions']:
-            logging.error('ERROR: Multiple items with same id ' + self.name)
-            ready_to_move = False
+            logging.error(f'{self.name} Multiple items with same id')
         # Check if added data overlaps with OSM ids
         if json.loads(stats_osm.stdout)['data']['maxid']['nodes'] >= json.loads(stats.stdout)['data']['minid']['nodes']:
-            logging.error('ERROR: Added data overlaps with OSM data ' + self.name)
-            ready_to_move = False
+            logging.error(f'{self.name} Added data overlaps with OSM data')
         logging.info(f'{self.name} quality check finished')
-        return ready_to_move
 
     def slice(self, config):
         '''
