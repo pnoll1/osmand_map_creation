@@ -46,7 +46,7 @@ class WorkingArea():
         unzips oa data for current working area
         '''
         try:
-            run(['unzip', '-qq', '-o', 'data',self.directory.as_posix() + '/*addresses*'])
+            run(['unzip', '-qq', '-o', 'data.zip', self.directory.as_posix() + '/*addresses*'])
         except CalledProcessError as error:
             logging.error(self.directory.as_posix() + ' ' + error.stderr)
 
@@ -442,4 +442,4 @@ def update_oa(token):
     action: downloads global oa zip and unzips it, overwriting previous files
     output: none
     '''
-    run(['wget', '--backups=1', '--header', 'Authorization: Bearer ' + token, 'https://batch.openaddresses.io/api/collections/1/data'])
+    run(['wget', '--backups=1', '--header', f'Authorization: Bearer {token}', 'https://batch.openaddresses.io/api/collections/1/data', '-O data.zip'])
