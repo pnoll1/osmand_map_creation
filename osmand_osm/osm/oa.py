@@ -41,12 +41,12 @@ class WorkingArea():
     def __repr__(self):
         return 'WorkingArea(' + self.name + ')'
 
-    def decompress_oa(self):
+    def decompress_oa(self, filename):
         '''
         unzips oa data for current working area
         '''
         try:
-            run(['unzip', '-qq', '-o', 'data.zip', self.directory.as_posix() + '/*addresses*'])
+            run(['unzip', '-qq', '-o', filename, self.directory.as_posix() + '/*addresses*'])
         except CalledProcessError as error:
             logging.error(self.directory.as_posix() + ' ' + error.stderr)
 

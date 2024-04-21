@@ -53,12 +53,9 @@ class UnitTests(unittest.TestCase):
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/load-oa-addresses-city.geojson'))]
         run(['cp', 'aa/load-oa-addresses-city.geojson', 'aa/load-oa-addresses-city.geojson.bak'])
-        run(['mv', 'data', 'data.bak'])
-        run(['cp', '-n', 'aa/data.zip', 'data'])
-        working_area.decompress_oa()
+        working_area.decompress_oa('aa/data.zip')
         working_area.load_oa('gis')
         run(['mv', 'aa/load-oa-addresses-city.geojson.bak', 'aa/load-oa-addresses-city.geojson'])
-        run(['mv', 'data.bak', 'data'])
         self.cur.execute('select * from aa_load_oa_addresses_city_temp')
         data = self.cur.fetchall()
         # check for street

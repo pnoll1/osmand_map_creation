@@ -66,7 +66,7 @@ def run_all(area, args):
     working_area = oa.WorkingArea(area)
     logging.debug(working_area)
     if args.load_oa:
-        working_area.decompress_oa()
+        working_area.decompress_oa('data.zip')
         working_area.create_master_list()
         working_area.load_oa(DB_NAME)
     if args.filter_data:
