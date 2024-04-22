@@ -3,6 +3,7 @@ utilities for working with OpenAddresses data and transforming to OSM format
 '''
 import json
 import logging
+import os
 from pathlib import Path
 from subprocess import run, CalledProcessError
 
@@ -442,4 +443,14 @@ def update_oa(token):
     action: downloads global oa zip and unzips it, overwriting previous files
     output: none
     '''
-    run(['wget', '--backups=1', '--header', f'Authorization: Bearer {token}', 'https://batch.openaddresses.io/api/collections/1/data', '-O data.zip'])
+    logging.info('update oa started')
+    os.replace('data.zip', 'data.zip.1')
+    run(['wget', '--header', f'Authorization: Bearer {token}', 'https://batch.openaddresses.io/api/collections/1/data'])
+    # check if file finished downloading
+    if os.stat('data').st_size > 20480:
+        os.rename('data', 'data.zip')
+    else:
+        logging.warning('update_oa unsuccessful, using old data')
+        os.remove('data')
+        os.rename('data.zip.1', 'data.zip')
+    logging.info('update oa finished')
