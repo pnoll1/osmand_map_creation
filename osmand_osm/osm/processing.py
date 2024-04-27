@@ -82,12 +82,30 @@ def run_all(area, args):
         working_area.merge()
     if args.quality_check:
         working_area.quality_check()
+    subarea_list = []
     if args.slice:
         subarea_list = working_area.slice(slice_config)
     if args.build:
-        obf.build(working_area, subarea_list)
+        # single area
+        if not subarea_list:
+            obf.build(working_area)
+            if args.calculate_hashes:
+                obf.calculate_hashes(working_area.obf_name)
+        # area with sliced subareas
+        else:
+            obf.build(subarea_list)
+            if args.calculate_hashes:
+                for subarea in subarea_list:
+                    obf.calculate_hashes(subarea.obf_name)
     if args.calculate_hashes:
-        obf.calculate_hashes(working_area.obf_name)
+        # single area
+        if not subarea_list:
+            obf.calculate_hashes(working_area.obf_name)
+        # area with sliced subareas
+        else:
+            for subarea in subarea_list:
+                obf.calculate_hashes(subarea.obf_name)
+
 
 def main(args=None):
     '''

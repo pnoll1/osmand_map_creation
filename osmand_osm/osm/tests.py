@@ -397,7 +397,7 @@ class UnitTests(unittest.TestCase):
         slice_config['aa'] = [['north', '-79.75,27.079,-87.759,31.171'], ['south', '-79.508,24.237,-82.579,27.079']]
         working_area = oa.WorkingArea('aa')
         subarea_list = working_area.slice(slice_config)
-        obf.build(working_area, subarea_list)
+        obf.build(subarea_list)
 
 class IntegrationTests(unittest.TestCase):
     '''
