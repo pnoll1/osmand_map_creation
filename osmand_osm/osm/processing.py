@@ -96,15 +96,6 @@ def run_all(area, args):
             if args.calculate_hashes:
                 for subarea in subarea_list:
                     obf.calculate_hashes(subarea.obf_name)
-    if args.calculate_hashes:
-        # single area
-        if not subarea_list:
-            obf.calculate_hashes(working_area.obf_name)
-        # area with sliced subareas
-        else:
-            for subarea in subarea_list:
-                obf.calculate_hashes(subarea.obf_name)
-
 
 def main(args=None):
     '''
