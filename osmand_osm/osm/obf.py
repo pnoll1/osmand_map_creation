@@ -37,9 +37,12 @@ def calculate_hashes(filename):
     output: none
     '''
     filename = Path(filename)
-    with open(filename, 'rb') as opened_file:
-        data = opened_file.read()
-        sha256 = hashlib.sha256(data).hexdigest()
-        # write sha256 to file
-        with open(filename.with_suffix('.sha256'),'w') as sha256_file:
-            sha256_file.write(sha256 + ' ' + filename.name)
+    try:
+        with open(filename, 'rb') as opened_file:
+            data = opened_file.read()
+            sha256 = hashlib.sha256(data).hexdigest()
+            # write sha256 to file
+            with open(filename.with_suffix('.sha256'),'w') as sha256_file:
+                sha256_file.write(sha256 + ' ' + filename.name)
+    except FileNotFoundError:
+        logging.error(f'{filename} hash failed. File not found.')
