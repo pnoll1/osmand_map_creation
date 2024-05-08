@@ -97,10 +97,10 @@ class WorkingArea():
             cur.close()
             conn.close()
             try:
-                run(f'ogr2ogr PG:dbname={db_name} {source.path} -nln {source.table_temp} -overwrite -lco OVERWRITE=YES', shell=True, capture_output=True, check=True, encoding='utf8')
+                run(f'ogr2ogr PG:dbname={db_name} "{source.path}" -nln {source.table_temp} -overwrite -lco OVERWRITE=YES', shell=True, capture_output=True, check=True, encoding='utf8')
             except CalledProcessError as error:
                 logging.warning(self.name + ' ' + error.stderr)
-            run(['rm', source.path.as_posix(), source.path.as_posix() + '.meta'])
+            run(['rm', source.path.as_posix(), f'{source.path.as_posix()}.meta'])
         logging.info(self.name + ' ' + 'Load Finished')
 
     def filter_complex_garbage(self, table, cur):
@@ -426,10 +426,10 @@ class Source():
     '''
     def __init__(self, path):
         self.path = path
-        self.path_osm = Path(path.as_posix().replace('.geojson', '_addresses.osm.pbf'))
+        self.path_osm = Path(path.as_posix().replace(' ', '_').replace('.geojson', '_addresses.osm.pbf'))
         # - is not allowed in postgres
-        self.table = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','')
-        self.table_temp = path.as_posix().replace('/','_').replace('-','_').replace('.geojson','') + '_temp'
+        self.table = path.as_posix().replace('/','_').replace('-','_').replace(' ','_').replace('.geojson','')
+        self.table_temp = f'{self.table}_temp'
 
     def __str__(self):
         return str(self.path)
