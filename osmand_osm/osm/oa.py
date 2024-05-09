@@ -428,7 +428,7 @@ class Source():
         self.path = path
         self.path_osm = Path(path.as_posix().replace(' ', '_').replace('.geojson', '_addresses.osm.pbf'))
         # - is not allowed in postgres
-        self.table = path.as_posix().replace('/','_').replace('-','_').replace(' ','_').replace('.geojson','')
+        self.table = path.as_posix().replace('/','_').replace('-','_').replace(' ','_').replace('.geojson','').lower()
         self.table_temp = f'{self.table}_temp'
 
     def __str__(self):
