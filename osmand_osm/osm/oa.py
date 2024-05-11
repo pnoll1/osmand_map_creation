@@ -97,7 +97,7 @@ class WorkingArea():
             cur.close()
             conn.close()
             try:
-                run(f'ogr2ogr PG:dbname={db_name} "{source.path}" -nln {source.table_temp} -overwrite -lco OVERWRITE=YES', shell=True, capture_output=True, check=True, encoding='utf8')
+                run(f'ogr2ogr PG:dbname={db_name} "{source.path}" -nln {source.table_temp} -overwrite -lco OVERWRITE=YES -lco SPATIAL_INDEX=NONE', shell=True, capture_output=True, check=True, encoding='utf8')
             except CalledProcessError as error:
                 logging.warning(self.name + ' ' + error.stderr)
             run(['rm', source.path.as_posix(), f'{source.path.as_posix()}.meta'])
