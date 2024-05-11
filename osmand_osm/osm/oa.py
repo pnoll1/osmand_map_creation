@@ -89,13 +89,6 @@ class WorkingArea():
         logging.info(self.name + ' load oa started')
         for source in self.master_list:
             logging.debug(source.path.as_posix() + 'loading' )
-            conn = psycopg.connect(f'dbname={db_name}')
-            cur = conn.cursor()
-            # ogr2ogr errors out if index exists
-            cur.execute(f'drop index if exists {source.table_temp}_wkb_geometry_geom_idx')
-            conn.commit()
-            cur.close()
-            conn.close()
             try:
                 run(f'ogr2ogr PG:dbname={db_name} "{source.path}" -nln {source.table_temp} -overwrite -lco OVERWRITE=YES -lco SPATIAL_INDEX=NONE', shell=True, capture_output=True, check=True, encoding='utf8')
             except CalledProcessError as error:
