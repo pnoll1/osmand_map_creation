@@ -1,4 +1,4 @@
-from subprocess import run
+from subprocess import run, CalledProcessError
 import hashlib
 import logging
 import json
@@ -46,8 +46,14 @@ class Osm():
         '''
         logging.info(f'{working_area.name} updating OSM data')
         url = self.geofabrik_lookup(working_area)
-        run(f'curl --output {self.pbf} {url}', shell=True, capture_output=True, encoding='utf8')
-        run(f'curl --output {self.pbf_md5} {url}.md5', shell=True, capture_output=True, encoding='utf8')
+        try:
+            run(f'curl --output {self.pbf} {url}', shell=True, capture_output=True, check=True, encoding='utf8')
+        except CalledProcessError as error:
+            logging.error(f'{working_area.name} osm data download error {error.stderr}')
+        try:
+            run(f'curl --output {self.pbf_md5} {url}.md5', shell=True, capture_output=True, check=True, encoding='utf8')
+        except CalledProcessError as error:
+            logging.error(f'{working_area.name} osm data md5 download error {error.stderr}')
         # pull md5 hash from file
         with open(self.pbf_md5) as md5:
             md5 = md5.read()
