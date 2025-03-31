@@ -18,9 +18,9 @@ Script: Worldwide depending on [GeoFabrik](https://download.geofabrik.de) and [O
 # Usage
 ## Getting the map files
 Option 1:  
-Download file from [releases](https://github.com/pnoll1/osmand_map_creation/releases) to data folder for OSMAND and it will auto load.  
+Download file from [opensupermaps.com](https://opensupermaps.com/) to data folder for OSMAND and it will auto load.  
 Option 2:  
-Download file from [releases](https://github.com/pnoll1/osmand_map_creation/releases) to phone and open it. OSMAND will copy file into its data folder and load it.
+Download file from [opensupermaps.com](https://opensupermaps.com/) to phone and open it. OSMAND will copy file into its data folder and load it.
 This will leave a copy of the file in the Downloads folder.
 
 Deactivate the default map file(s) to ensure search pulls results from this file.  
