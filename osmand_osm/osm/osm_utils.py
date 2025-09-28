@@ -47,11 +47,11 @@ class Osm():
         logging.info(f'{working_area.name} updating OSM data')
         url = self.geofabrik_lookup(working_area)
         try:
-            run(f'curl --output {self.pbf} {url}', shell=True, capture_output=True, check=True, encoding='utf8')
+            run(f'curl -L --output {self.pbf} {url}', shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
             logging.error(f'{working_area.name} osm data download error {error.stderr}')
         try:
-            run(f'curl --output {self.pbf_md5} {url}.md5', shell=True, capture_output=True, check=True, encoding='utf8')
+            run(f'curl -L --output {self.pbf_md5} {url}.md5', shell=True, capture_output=True, check=True, encoding='utf8')
         except CalledProcessError as error:
             logging.error(f'{working_area.name} osm data md5 download error {error.stderr}')
         # pull md5 hash from file
