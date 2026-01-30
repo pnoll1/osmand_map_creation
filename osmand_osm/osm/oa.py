@@ -208,8 +208,10 @@ class WorkingArea():
             cur.execute(f"delete from \"{source.table_temp}\" where wkb_geometry='0101000020E610000000000000000000000000000000000000';")
             logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' geometry at 0,0')
             # delete 1 word streets, allow for US-101 case
-            cur.execute(f"delete from \"{source.table_temp}\" where street !~ '.*[- ]+.*';")
-            logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' 1 word street')
+            # addresses with 0 or 1 words in street field can be valid eg Hr
+            if self.country == 'us':
+                cur.execute(f"delete from \"{source.table_temp}\" where street !~ '.*[- ]+.*';")
+                logging.info(source.table + ' DELETE ' + str(cur.rowcount) + ' 1 word street')
             self.filter_complex_garbage(source.table_temp, cur)
             conn.commit()
         cur.close()

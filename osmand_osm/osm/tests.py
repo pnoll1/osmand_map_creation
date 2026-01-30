@@ -115,6 +115,9 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
                 values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
                 , (14, '4784', 'N ST JOSEPH\'S WAY', '', 'c8a78acbfab009ea', 'POINT(-111.2602258 32.9214257)'))
+        self.cur.execute("insert into aa_filter_data_addresses_city_temp (ogc_fid, number, street, postcode, hash, wkb_geometry) \
+                values (%s, %s, %s, %s, %s, ST_GEOMFromText(%s, 4326))" \
+                , (15, '30', 'Prhovo', '22202', '7de4d3c09b68b457', 'POINT(15.9569382 43.6004139)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/filter-data-addresses-city.geojson'))]
@@ -164,6 +167,11 @@ class UnitTests(unittest.TestCase):
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where street='N ST JOSEPH''S WAY' and number='4784';")
         data = self.cur.fetchall()
         self.assertEqual(len(data), 1)
+        # 1 word street represent villages
+        self.cur.execute("select * from aa_filter_data_addresses_city_temp where street='Prhovo' and number='30';")
+        data = self.cur.fetchall()
+        self.assertEqual(len(data), 1)
+
 
     def test_merge_oa(self):
         '''       
