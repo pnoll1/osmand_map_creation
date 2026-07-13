@@ -234,7 +234,7 @@ class WorkingArea():
                 conn.rollback()
             # insert addresses from temp table if not there, using index to autodetect dupes
             try:
-                cur.execute(f'insert into {source.table} select * from {source.table_temp} on conflict do nothing')
+                cur.execute(f'insert into {source.table} select ogc_fid,hash,number,street,unit,city,district,region,postcode,id,wkb_geometry from {source.table_temp} on conflict do nothing')
                 logging.info(source.table + ' Insert ' + str(cur.rowcount))
             except psycopg.errors.InvalidParameterValue as error:
                 logging.warning(f'{source.table} InvalidParameterValue during merge_oa insert: {error}')

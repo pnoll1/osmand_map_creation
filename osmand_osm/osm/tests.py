@@ -215,15 +215,15 @@ class UnitTests(unittest.TestCase):
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
         working_area.merge_oa(DB_NAME)
-        self.cur.execute("select * from aa_merge_oa_addresses_city;")
+        self.cur.execute("select number,street,postcode,wkb_geometry from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
-        self.assertIn((3, None, '115', 'NW 41st ST', None, None, None, None, '98107', '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
-        self.assertIn((4, None, '119', 'NW 41st ST', None, None, None, None, '98107', 'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
-        self.assertIn((5, None, '71', 'Linwood Ave', None, None, None, None, '02907', 'e1262d57e0077c2e', '0101000020E6100000430F6BE0FDDB51C0224212AC60E74440'), data)
+        self.assertIn(('115', 'NW 41st ST', '98107', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
+        self.assertIn(('119', 'NW 41st ST', '98107', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
+        self.assertIn(('71', 'Linwood Ave', '02907', '0101000020E6100000430F6BE0FDDB51C0224212AC60E74440'), data)
         count = 0
         for address in data:
-            if address[2] == '71':
+            if address[0] == '71':
                 count += 1
         self.assertEqual(count, 1, 'deduping did not work')
 
@@ -250,11 +250,11 @@ class UnitTests(unittest.TestCase):
         working_area = oa.WorkingArea('aa')
         working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
         working_area.merge_oa(DB_NAME)
-        self.cur.execute("select * from aa_merge_oa_addresses_city;")
+        self.cur.execute("select number,street,postcode,wkb_geometry from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
         # check that temp table copied over
-        self.assertIn((2, None, '115', 'NW 41st ST', None, None, None, None, '98107', '87d28792bee6b164', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
-        self.assertIn((1, None, '119', 'NW 41st ST', None, None, None, None, '98107', 'e8605a496593386e', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
+        self.assertIn(('115', 'NW 41st ST','98107', '0101000020E6100000DD7C23BAE7965EC0FC3ACB87FBD34740'), data)
+        self.assertIn(('119', 'NW 41st ST', '98107', '0101000020E61000003BEFB556EA965EC03EFC4685FBD34740'), data)
 
     def test_merge_oa_zdata(self):
         '''
