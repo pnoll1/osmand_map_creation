@@ -241,7 +241,7 @@ class WorkingArea():
                 conn.rollback()
                 # get rid of z geometry
                 cur.execute(f'alter table {source.table_temp} alter column wkb_geometry type geometry(point, 4326) using ST_Force2D(wkb_geometry);')
-                cur.execute(f'insert into {source.table} select * from {source.table_temp} on conflict do nothing')
+                cur.execute(f'insert into {source.table} select ogc_fid,hash,number,street,unit,city,district,region,postcode,id,wkb_geometry from {source.table_temp} on conflict do nothing')
                 logging.info(source.table + ' Insert ' + str(cur.rowcount))
             # get rid of temp table
             cur.execute(f'drop table {source.table_temp}')
