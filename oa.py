@@ -24,12 +24,14 @@ class WorkingArea():
         if len(name_list) == 2:
             # handle iso3166-2 (country and subdivision)
             self.short_name = name_list[1]
-            self.directory = Path(self.country + '/' + self.short_name)
+            self.directory = Path(f'oa/{self.country}/{self.short_name}')
+            self.directory_oa = Path(f'{self.country}/{self.short_name}')
             self.is_3166_2 = True
         elif len(name_list) == 1:
             # handle iso3166-1 (country only)
             self.short_name = name_list[0]
-            self.directory = Path(self.name)
+            self.directory = Path(f'oa/{self.name}')
+            self.directory_oa = Path(f'{self.name}')
             self.is_3166_2 = False
         self.master_list = None
         self.obf_name = self.name_underscore.capitalize() + '.obf'
@@ -47,7 +49,7 @@ class WorkingArea():
         unzips oa data for current working area
         '''
         try:
-            run(['unzip', '-qq', '-o', filename, self.directory.as_posix() + '/*addresses*'])
+            run(['unzip', '-qq', '-o', filename, self.directory_oa.as_posix() + '/*addresses*', '-d', 'oa'], check=True)
         except CalledProcessError as error:
             logging.error(self.directory.as_posix() + ' ' + error.stderr)
 
@@ -423,7 +425,7 @@ class Source():
         self.path = path
         self.path_osm = Path(path.as_posix().replace(' ', '_').replace('.geojson', '_addresses.osm.pbf'))
         # - is not allowed in postgres
-        self.table = path.as_posix().replace('/','_').replace('-','_').replace(' ','_').replace('.geojson','').lower()
+        self.table = path.as_posix().replace('/','_').replace('-','_').replace(' ','_').replace('.geojson','').replace('oa_','',1).lower()
         self.table_temp = f'{self.table}_temp'
 
     def __str__(self):

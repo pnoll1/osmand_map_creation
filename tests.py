@@ -1,3 +1,4 @@
+#!env/bin/python3
 import unittest
 from subprocess import run
 import types
@@ -51,11 +52,11 @@ class UnitTests(unittest.TestCase):
         self.cur.execute('drop table if exists aa_load_oa_addresses_city_temp')
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/load-oa-addresses-city.geojson'))]
-        run(['cp', 'aa/load-oa-addresses-city.geojson', 'aa/load-oa-addresses-city.geojson.bak'])
-        working_area.decompress_oa('aa/data.zip')
+        working_area.master_list = [oa.Source(Path('oa/aa/load-oa-addresses-city.geojson'))]
+        run(['cp', 'oa/aa/load-oa-addresses-city.geojson', 'oa/aa/load-oa-addresses-city.geojson.bak'])
+        working_area.decompress_oa('oa/aa/data.zip')
         working_area.load_oa('gis')
-        run(['mv', 'aa/load-oa-addresses-city.geojson.bak', 'aa/load-oa-addresses-city.geojson'])
+        run(['mv', 'oa/aa/load-oa-addresses-city.geojson.bak', 'oa/aa/load-oa-addresses-city.geojson'])
         self.cur.execute('select * from aa_load_oa_addresses_city_temp')
         data = self.cur.fetchall()
         # check for street
@@ -120,7 +121,7 @@ class UnitTests(unittest.TestCase):
                 , (15, '30', 'Prhovo', '22202', '7de4d3c09b68b457', 'POINT(15.9569382 43.6004139)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/filter-data-addresses-city.geojson'))]
+        working_area.master_list = [oa.Source(Path('oa/aa/filter-data-addresses-city.geojson'))]
         working_area.filter_data(DB_NAME)
         # check for empty street
         self.cur.execute("select * from aa_filter_data_addresses_city_temp where street='' or street is null")
@@ -213,7 +214,7 @@ class UnitTests(unittest.TestCase):
                 , (4, '119', 'NW 41st ST', '98107', 'e8605a496593386e', 'POINT(-122.3580529 47.6561133)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        working_area.master_list = [oa.Source(Path('oa/aa/merge-oa-addresses-city.geojson'))]
         working_area.merge_oa(DB_NAME)
         self.cur.execute("select number,street,postcode,wkb_geometry from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
@@ -248,7 +249,7 @@ class UnitTests(unittest.TestCase):
                 , (2, '115', 'NW 41st ST', '98107', '87d28792bee6b164', 'POINT(-122.3578935 47.6561136)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        working_area.master_list = [oa.Source(Path('oa/aa/merge-oa-addresses-city.geojson'))]
         working_area.merge_oa(DB_NAME)
         self.cur.execute("select number,street,postcode,wkb_geometry from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
@@ -288,7 +289,7 @@ class UnitTests(unittest.TestCase):
                 unique nulls not distinct (number, street, unit, wkb_geometry)')
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/merge-oa-addresses-city.geojson'))]
+        working_area.master_list = [oa.Source(Path('oa/aa/merge-oa-addresses-city.geojson'))]
         working_area.merge_oa(DB_NAME)
         self.cur.execute("select number,street,postcode,wkb_geometry from aa_merge_oa_addresses_city;")
         data = self.cur.fetchall()
@@ -327,16 +328,16 @@ class UnitTests(unittest.TestCase):
                 , (3, '1', 'Di Mario Dr', '02904', '908f551defc1295a', 'POINT(-71.4188401 41.8572897)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/output-osm-ids.geojson')) \
-                , oa.Source(Path('aa/output-osm-ids2.geojson'))]
+        working_area.master_list = [oa.Source(Path('oa/aa/output-osm-ids.geojson')) \
+                , oa.Source(Path('oa/aa/output-osm-ids2.geojson'))]
         working_area.output_osm(ID_START, DB_NAME)
         # check output files have ids different and descending
-        run('osmium cat --no-progress -f osm aa/output-osm-ids_addresses.osm.pbf > aa/output-osm-ids_addresses.osm', shell=True)
-        with open('aa/output-osm-ids_addresses.osm') as test_file:
+        run('osmium cat --no-progress -f osm oa/aa/output-osm-ids_addresses.osm.pbf > oa/aa/output-osm-ids_addresses.osm', shell=True)
+        with open('oa/aa/output-osm-ids_addresses.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, '17179869183', 'osm id did not start at right location')
-        run('osmium cat --no-progress -f osm aa/output-osm-ids2_addresses.osm.pbf > aa/output-osm-ids2_addresses.osm', shell=True)
-        with open('aa/output-osm-ids2_addresses.osm') as test_file:
+        run('osmium cat --no-progress -f osm oa/aa/output-osm-ids2_addresses.osm.pbf > oa/aa/output-osm-ids2_addresses.osm', shell=True)
+        with open('oa/aa/output-osm-ids2_addresses.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, '17179869182', 'osm id did not decrease in second file')
         self.conn.commit()
@@ -364,10 +365,10 @@ class UnitTests(unittest.TestCase):
                 , (3, '500', '#A02 E CHERRY LN', '98926', 'bc0d5eb064e9d91a', 'POINT(-120.540328 46.9862581)'))
         self.conn.commit()
         working_area = oa.WorkingArea('aa')
-        working_area.master_list = [oa.Source(Path('aa/output-osm-addresses-city.geojson'))]
+        working_area.master_list = [oa.Source(Path('oa/aa/output-osm-addresses-city.geojson'))]
         working_area.output_osm(ID_START, DB_NAME)
-        run('osmium cat --no-progress -f osm aa/output-osm-addresses-city_addresses.osm.pbf > aa/output-osm-addresses-city_addresses.osm', shell=True)
-        with open('aa/output-osm-addresses-city_addresses.osm') as test_file:
+        run('osmium cat --no-progress -f osm oa/aa/output-osm-addresses-city_addresses.osm.pbf > oa/aa/output-osm-addresses-city_addresses.osm', shell=True)
+        with open('oa/aa/output-osm-addresses-city_addresses.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, 'Di Mario Dr')
             # check that ogr2osm doesn't merge
@@ -388,12 +389,12 @@ class UnitTests(unittest.TestCase):
         # check function output
         self.assertEqual(subarea_list[0].bounding_box, slice_config['aa'][0][1])
         # check file output
-        run('osmium cat --no-progress -f osm aa/aa_south.osm.pbf > aa/aa_south.osm', shell=True)
-        with open('aa/aa_south.osm') as test_file:
+        run('osmium cat --no-progress -f osm oa/aa/aa_south.osm.pbf > oa/aa/aa_south.osm', shell=True)
+        with open('oa/aa/aa_south.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, 'SW 223 ST')
-        run('osmium cat --no-progress -f osm aa/aa_north.osm.pbf > aa/aa_north.osm', shell=True)
-        with open('aa/aa_north.osm') as test_file:
+        run('osmium cat --no-progress -f osm oa/aa/aa_north.osm.pbf > oa/aa/aa_north.osm', shell=True)
+        with open('oa/aa/aa_north.osm') as test_file:
             file_text = test_file.read()
             self.assertRegex(file_text, 'OLD BELLAMY RD')
 
@@ -430,7 +431,7 @@ class IntegrationTests(unittest.TestCase):
         args.calculate_hashes = False
 
     def tearDown(self):
-        run(['mv', 'us/ri/us_ri.osm.pbf', './us_ri_test.osm.pbf'])
+        run(['mv', 'oa/us/ri/us_ri.osm.pbf', './us_ri_test.osm.pbf'])
 
     def test_success(self):
         '''

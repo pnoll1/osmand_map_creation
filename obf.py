@@ -5,6 +5,7 @@ import hashlib
 import logging
 from pathlib import Path
 from subprocess import run, CalledProcessError
+import shutil
 from config import XMX
 
 def build(areas):
@@ -18,17 +19,19 @@ def build(areas):
         for subarea in areas:
             try:
                 logging.info(f'{subarea.name} build started')
-                run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf --srtm=../../terrain {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
+                run(f'JAVA_OPTS="-Xmx{XMX}" osmand_map_creator/utilities.sh generate-obf --srtm=terrain {subarea.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
                 logging.info(f'{subarea.name} build finished')
             except CalledProcessError as error:
                 logging.error(f'{subarea.name} map creator build issue {error.stderr}')
+            shutil.copy2(subarea.obf_name,'obf/')
     else:
         try:
             logging.info(f'{areas.name} build started')
-            run(f'JAVA_OPTS="-Xmx{XMX}" ../../osmand_map_creator/utilities.sh generate-obf {areas.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
+            run(f'JAVA_OPTS="-Xmx{XMX}" osmand_map_creator/utilities.sh generate-obf --srtm=terrain {areas.pbf}', shell=True, capture_output=True, check=True,encoding='utf8')
             logging.info(f'{areas.name} build finished')
         except CalledProcessError as error:
             logging.error(f'{areas.name} map creator build issue {error.stderr}')
+        shutil.copy(areas.obf_name,'obf')
 
 def calculate_hashes(filename):
     '''
