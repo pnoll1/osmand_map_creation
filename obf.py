@@ -5,7 +5,7 @@ import hashlib
 import logging
 from pathlib import Path
 from subprocess import run, CalledProcessError
-import shutil
+import os
 from config import XMX
 
 def build(areas):
@@ -23,7 +23,7 @@ def build(areas):
                 logging.info(f'{subarea.name} build finished')
             except CalledProcessError as error:
                 logging.error(f'{subarea.name} map creator build issue {error.stderr}')
-            shutil.copy2(subarea.obf_name,'obf/')
+            os.replace(subarea.obf_name,f'obf/{subarea.obf_name}')
     else:
         try:
             logging.info(f'{areas.name} build started')
@@ -31,7 +31,7 @@ def build(areas):
             logging.info(f'{areas.name} build finished')
         except CalledProcessError as error:
             logging.error(f'{areas.name} map creator build issue {error.stderr}')
-        shutil.copy(areas.obf_name,'obf')
+        os.replace(areas.obf_name,f'obf/{areas.obf_name}')
 
 def calculate_hashes(filename):
     '''
